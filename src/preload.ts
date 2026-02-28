@@ -34,6 +34,12 @@ const api = {
   getBodies: (systemAddress: number): Promise<SystemBody[]> =>
     ipcRenderer.invoke('bodies:get', systemAddress),
 
+  onBodiesUpdated: (callback: (systemAddress: number) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, addr: number) => callback(addr);
+    ipcRenderer.on('bodies:updated', handler);
+    return () => ipcRenderer.removeListener('bodies:updated', handler);
+  },
+
   getCommander: (): Promise<Commander | null> =>
     ipcRenderer.invoke('commander:get'),
 

@@ -181,6 +181,10 @@ async function init(): Promise<void> {
     }
   }
 
+  window.chronicle.onBodiesUpdated((systemAddress) => {
+    refreshBodyList(systemAddress);
+  });
+
   function applyWatchingInfo(info: WatchingInfo): void {
     if (info.scanning) {
       setStatus('Scanning for new session...', false);

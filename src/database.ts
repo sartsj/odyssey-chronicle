@@ -267,6 +267,6 @@ export function getBodiesBySystem(systemAddress: number): SystemBody[] {
   return db.prepare(
     `SELECT body_name, body_type, planet_class, landable, distance, discovered_by, mapped_by
      FROM bodies WHERE system_address = ?
-     ORDER BY distance ASC`
+     ORDER BY body_name ASC`
   ).all(systemAddress) as SystemBody[];
 }

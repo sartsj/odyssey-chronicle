@@ -274,10 +274,22 @@ function readNewLines(win: BrowserWindow): void {
           updateBodyDiscoveredBy(event.data.BodyName, activeCommander.name);
         }
 
+        if (event.type === 'Scan' &&
+            typeof event.data.SystemAddress === 'number' &&
+            event.data.SystemAddress === activeCommander?.currentSystem) {
+          win.webContents.send('bodies:updated', event.data.SystemAddress);
+        }
+
         if (event.type === 'SAAScanComplete' &&
             typeof event.data.BodyName === 'string' &&
             activeCommander) {
           updateBodyMappedBy(event.data.BodyName, activeCommander.name);
+        }
+
+        if (event.type === 'SAAScanComplete' &&
+            typeof event.data.SystemAddress === 'number' &&
+            event.data.SystemAddress === activeCommander?.currentSystem) {
+          win.webContents.send('bodies:updated', event.data.SystemAddress);
         }
 
         if (event.type === 'Shutdown') {
