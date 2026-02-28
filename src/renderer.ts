@@ -102,13 +102,19 @@ function createBodyElement(body: SystemBody): HTMLLIElement {
   dist.className = 'body__distance';
   dist.textContent = `${body.distance.toFixed(1)} ls`;
 
-  const badge = document.createElement('span');
-  badge.className = body.landable
-    ? 'body__badge body__badge--landable'
-    : 'body__badge';
-  badge.textContent = body.landable ? 'landable' : body.body_type.toLowerCase();
+  const type = document.createElement('span');
+  type.className = `body__badge body__badge--type body__badge--${body.body_type.toLowerCase()}`;
+  type.textContent = body.body_type.toLowerCase();
 
-  li.append(name, cls, dist, badge);
+  const landable = document.createElement('span');
+  if (body.landable) {
+    landable.className = 'body__badge body__badge--landable';
+    landable.textContent = 'landable';
+  } else {
+    landable.className = 'body__col-empty';
+  }
+
+  li.append(name, cls, dist, type, landable);
   return li;
 }
 
