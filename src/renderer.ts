@@ -25,6 +25,67 @@ function createEventElement(event: GameEvent): HTMLLIElement {
   return li;
 }
 
+// Matches names like "Colonia 2 A Belt Cluster 3" — captures the base name before
+// the trailing number so siblings can be grouped under "Colonia 2 A Belt Cluster".
+const BELT_CLUSTER_RE = /^(.+) \d+$/;
+
+type BodyEntry =
+  | { kind: 'single'; body: SystemBody }
+  | { kind: 'group';  key: string; members: SystemBody[] };
+
+function buildBodyEntries(bodies: SystemBody[]): BodyEntry[] {
+  const result: BodyEntry[] = [];
+  const groupMap = new Map<string, { kind: 'group'; key: string; members: SystemBody[] }>();
+
+  for (const body of bodies) {
+    if (body.body_type === 'Unknown') {
+      const m = BELT_CLUSTER_RE.exec(body.body_name);
+      if (m) {
+        const key = m[1];
+        if (!groupMap.has(key)) {
+          const entry = { kind: 'group' as const, key, members: [] as SystemBody[] };
+          groupMap.set(key, entry);
+          result.push(entry); // placeholder inserted at first-member position
+        }
+        groupMap.get(key)!.members.push(body);
+        continue;
+      }
+    }
+    result.push({ kind: 'single', body });
+  }
+
+  return result;
+}
+
+function createBodyGroup(key: string, members: SystemBody[]): HTMLLIElement {
+  const li = document.createElement('li');
+  li.className = 'body-group';
+
+  const details = document.createElement('details');
+
+  const summary = document.createElement('summary');
+  summary.className = 'body-group__summary';
+
+  const name = document.createElement('span');
+  name.className = 'body__name';
+  name.textContent = key;
+
+  const badge = document.createElement('span');
+  badge.className = 'body__badge';
+  badge.textContent = `${members.length}`;
+
+  summary.append(name, badge);
+  details.append(summary);
+
+  const inner = document.createElement('ul');
+  inner.className = 'body-group__list';
+  for (const body of members) inner.append(createBodyElement(body));
+  details.append(inner);
+
+  li.append(details);
+  return li;
+}
+
 function createBodyElement(body: SystemBody): HTMLLIElement {
   const li = document.createElement('li');
   li.className = `body body--${body.body_type.toLowerCase()}`;
@@ -105,7 +166,13 @@ async function init(): Promise<void> {
     bodyList.innerHTML = '';
     if (systemAddress === null) return;
     const bodies = await window.chronicle.getBodies(systemAddress);
-    for (const body of bodies) bodyList.append(createBodyElement(body));
+    for (const entry of buildBodyEntries(bodies)) {
+      bodyList.append(
+        entry.kind === 'group'
+          ? createBodyGroup(entry.key, entry.members)
+          : createBodyElement(entry.body)
+      );
+    }
   }
 
   function applyWatchingInfo(info: WatchingInfo): void {

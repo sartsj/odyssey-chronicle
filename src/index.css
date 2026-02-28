@@ -214,6 +214,48 @@ body {
 
 .body__badge--landable { color: #4ade80; }
 
+/* Belt cluster groups */
+.body-group {
+  list-style: none;
+}
+
+.body-group details {
+  border-radius: 4px;
+  border-left: 3px solid #334155;
+  background: #13151e;
+  overflow: hidden;
+}
+
+.body-group__summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.body-group__summary::-webkit-details-marker { display: none; }
+
+.body-group__summary:hover .body__name {
+  color: #f1f5f9;
+}
+
+.body-group__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0.25rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.body-group__list .body {
+  border-radius: 3px;
+}
+
 /* Event list */
 .event-list {
   list-style: none;
