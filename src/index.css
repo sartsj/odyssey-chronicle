@@ -38,14 +38,14 @@ body {
   font-weight: 600;
   letter-spacing: 0.06em;
   color: #fba706;
-  margin-left: auto;
+  /* margin-left: auto; */
 }
 
 /* Status indicator */
 .status {
   font-size: 0.75rem;
   color: #64748b;
-  margin-left: 0.75rem;
+  margin-left: auto;
 }
 
 .status--active {
@@ -118,6 +118,17 @@ body {
   white-space: nowrap;
 }
 
+/* Stats header */
+.stat-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #1a1d27;
+  border-bottom: 1px solid #2d3148;
+}
+
+
 /* Tabs */
 .tabs {
   display: flex;
@@ -156,6 +167,18 @@ body {
 .tab-panel--hidden { display: none; }
 
 /* Body list */
+.body-list-header {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: #fba706;
+  border-bottom: 1px solid #fba706; 
+}
+
 .body-list {
   list-style: none;
   margin: 0;
@@ -167,8 +190,7 @@ body {
 
 .body {
   display: grid;
-  /* grid-template-columns: minmax(0, 1fr) minmax(0, 13rem) 4.5rem 7rem 5.5rem; */
-  grid-template-columns: 3fr 3fr 1fr 80px 80px;
+  grid-template-columns: 70px 3fr 3fr 1fr 80px 120px 100px 100px 100px;
   align-items: center;
   gap: 0.6rem;
   padding: 0.4rem 0.6rem;
@@ -201,7 +223,7 @@ body {
   color: #475569;
   white-space: nowrap;
   font-family: monospace;
-  text-align: right;
+  /* text-align: right; */
 }
 
 .body__badge {
@@ -222,6 +244,7 @@ body {
 .body__badge--type.body__badge--unknown { color: #475569; }
 
 .body__badge--landable { color: #4ade80; }
+.body__badge--terraformstate { color: #4ade80; }
 
 .body__col-empty { display: block; }
 
@@ -265,6 +288,43 @@ body {
 
 .body-group__list .body {
   border-radius: 3px;
+}
+
+/* History list */
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.visit {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border-left: 3px solid #fba706;
+  background: #13151e;
+}
+
+.visit__name {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visit__time {
+  font-size: 0.75rem;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Event list */

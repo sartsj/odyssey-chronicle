@@ -8,7 +8,7 @@
     <div class="app">
       <header class="header">
         <h1 class="header__title">Odyssey Chronicle</h1>
-        <span id="commander" class="commander" hidden></span>
+
         <!-- <span id="watched-file" class="watched-file" hidden></span> -->
         <span id="status" class="status">Not watching</span>
       </header>
@@ -26,13 +26,23 @@
         <span id="event-count" class="event-count">0 events</span>
       </div>
 
+      <div class="stat-header">
+        <span id="commander" class="commander" hidden></span>
+      </div>
+
       <div class="tabs">
         <button class="tab tab--active" data-tab="system">System</button>
+        <button class="tab" data-tab="history">History</button>
         <button class="tab" data-tab="events">Event Log</button>
       </div>
 
       <div id="panel-system" class="tab-panel">
+        <ul id="body-list-header" class="body-list-header"><li class="body"><span></span><span>name</span><span>type</span><span>distance</span><span></span><span></span><span>discovered by</span><span>mapped by</span><span>footfall by</span></li></ul>
         <ul id="body-list" class="body-list"></ul>
+      </div>
+
+      <div id="panel-history" class="tab-panel tab-panel--hidden">
+        <ul id="history-list" class="history-list"></ul>
       </div>
 
       <div id="panel-events" class="tab-panel tab-panel--hidden">
