@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { GameEvent, WatchingInfo, Commander, SystemBody } from './index';
+import type { GameEvent, WatchingInfo, Commander, SystemBody, SystemVisit } from './index';
 
 export type ChronicleAPI = typeof api;
 
@@ -47,6 +47,15 @@ const api = {
     const handler = (_: Electron.IpcRendererEvent, cmdr: Commander) => callback(cmdr);
     ipcRenderer.on('commander:active', handler);
     return () => ipcRenderer.removeListener('commander:active', handler);
+  },
+
+  getHistory: (): Promise<SystemVisit[]> =>
+    ipcRenderer.invoke('history:get'),
+
+  onHistoryUpdated: (callback: () => void): (() => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('history:updated', handler);
+    return () => ipcRenderer.removeListener('history:updated', handler);
   },
 };
 

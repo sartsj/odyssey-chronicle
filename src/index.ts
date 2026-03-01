@@ -1,8 +1,8 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
-import { initDatabase, insertEvent, getAllEvents, clearEvents, upsertCommander, getLastCommander, upsertSystemFromLocation, updateCommanderSystem, markAllBodiesFound, updateBodyDiscoveredBy, updateBodyMappedBy, getBodiesBySystem } from './database';
-export type { SystemBody } from './database';
+import { initDatabase, insertEvent, getAllEvents, clearEvents, upsertCommander, getLastCommander, upsertSystemFromLocation, updateCommanderSystem, markAllBodiesFound, updateBodyDiscoveredBy, updateBodyMappedBy, getBodiesBySystem, getSystemsVisited } from './database';
+export type { SystemBody, SystemVisit } from './database';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -262,6 +262,18 @@ function readNewLines(win: BrowserWindow): void {
           }
         }
 
+        if (event.type === 'FSDJump' &&
+            typeof event.data.SystemAddress === 'number' &&
+            typeof event.data.StarSystem    === 'string') {
+          if (activeCommander) {
+            updateCommanderSystem(activeCommander.fid, event.data.SystemAddress);
+            activeCommander.currentSystem     = event.data.SystemAddress;
+            activeCommander.currentSystemName = event.data.StarSystem;
+            win.webContents.send('commander:active', activeCommander);
+          }
+          win.webContents.send('history:updated');
+        }
+
         if (event.type === 'FSSAllBodiesFound' &&
             typeof event.data.SystemAddress === 'number') {
           markAllBodiesFound(event.data.SystemAddress);
@@ -381,6 +393,8 @@ function registerIpcHandlers(win: BrowserWindow): void {
   ipcMain.handle('bodies:get', (_event, systemAddress: number) =>
     getBodiesBySystem(systemAddress)
   );
+
+  ipcMain.handle('history:get', () => getSystemsVisited());
 }
 
 const createWindow = (): void => {

@@ -1,5 +1,5 @@
 import './index.css';
-import type { GameEvent, WatchingInfo, Commander, SystemBody } from './index';
+import type { GameEvent, WatchingInfo, Commander, SystemBody, SystemVisit } from './index';
 import type { ChronicleAPI } from './preload';
 
 declare global {
@@ -114,7 +114,43 @@ function createBodyElement(body: SystemBody): HTMLLIElement {
     landable.className = 'body__col-empty';
   }
 
-  li.append(name, cls, dist, type, landable);
+  const terraform_state = document.createElement('span');
+  if (body.terraform_state && body.terraform_state !== "") {
+    terraform_state.className = 'body__badge body__badge--terraformstate';
+    terraform_state.textContent = body.terraform_state.toLowerCase();
+  } else {
+    terraform_state.className = 'body__col-empty';
+  }
+
+  const discovered_by = document.createElement('span');
+  discovered_by.className = 'body__class';
+  discovered_by.textContent = body.discovered_by
+
+  const mapped_by = document.createElement('span');
+  mapped_by.className = 'body__class';
+  mapped_by.textContent = body.mapped_by
+
+  const footfall_by = document.createElement('span');
+  footfall_by.className = 'body__class';
+  footfall_by.textContent = body.footfall_by
+
+  li.append(type, name, cls, dist, landable, terraform_state, discovered_by, mapped_by, footfall_by);
+  return li;
+}
+
+function createHistoryElement(visit: SystemVisit): HTMLLIElement {
+  const li = document.createElement('li');
+  li.className = 'visit';
+
+  const name = document.createElement('span');
+  name.className = 'visit__name';
+  name.textContent = visit.system_name ?? `#${visit.system_address}`;
+
+  const time = document.createElement('span');
+  time.className = 'visit__time';
+  time.textContent = new Date(visit.visited_at).toLocaleString();
+
+  li.append(time, name);
   return li;
 }
 
@@ -161,8 +197,9 @@ async function init(): Promise<void> {
   const watchBtn   = document.getElementById('btn-watch')   as HTMLButtonElement;
   const stopBtn    = document.getElementById('btn-stop')    as HTMLButtonElement;
   const clearBtn   = document.getElementById('btn-clear')   as HTMLButtonElement;
-  const list       = document.getElementById('event-list')  as HTMLUListElement;
-  const bodyList   = document.getElementById('body-list')   as HTMLUListElement;
+  const list        = document.getElementById('event-list')   as HTMLUListElement;
+  const bodyList    = document.getElementById('body-list')    as HTMLUListElement;
+  const historyList = document.getElementById('history-list') as HTMLUListElement;
 
   initTabs();
 
@@ -181,8 +218,18 @@ async function init(): Promise<void> {
     }
   }
 
+  async function refreshHistoryList(): Promise<void> {
+    historyList.innerHTML = '';
+    const visits = await window.chronicle.getHistory();
+    for (const visit of visits) historyList.append(createHistoryElement(visit));
+  }
+
   window.chronicle.onBodiesUpdated((systemAddress) => {
     refreshBodyList(systemAddress);
+  });
+
+  window.chronicle.onHistoryUpdated(() => {
+    void refreshHistoryList();
   });
 
   function applyWatchingInfo(info: WatchingInfo): void {
@@ -239,7 +286,10 @@ async function init(): Promise<void> {
   // (auto-start is handled by the main process via 'file:watching')
   const cmdr = await window.chronicle.getCommander();
   setCommander(cmdr);
-  await refreshBodyList(cmdr?.currentSystem ?? null);
+  await Promise.all([
+    refreshBodyList(cmdr?.currentSystem ?? null),
+    refreshHistoryList(),
+  ]);
 
   window.chronicle.onCommanderActive((cmdr) => {
     setCommander(cmdr);
