@@ -16,6 +16,12 @@ export function initDatabase(): void {
   try { db.exec('ALTER TABLE bodies ADD COLUMN parent_body_id   INTEGER'); } catch { /* already exists */ }
   try { db.exec('ALTER TABLE bodies ADD COLUMN parent_body_type TEXT');    } catch { /* already exists */ }
   try { db.exec('ALTER TABLE bodies ADD COLUMN terraform_state  TEXT');    } catch { /* already exists */ }
+  // Migration: add scan value columns
+  try { db.exec('ALTER TABLE bodies ADD COLUMN scan_value INTEGER');                                    } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE star_systems ADD COLUMN estimated_scan_value INTEGER NOT NULL DEFAULT 0'); } catch { /* already exists */ }
+
+  // Migration: add star_type column
+  try { db.exec('ALTER TABLE bodies ADD COLUMN star_type TEXT'); } catch { /* already exists */ }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS events (
@@ -27,12 +33,13 @@ export function initDatabase(): void {
     );
 
     CREATE TABLE IF NOT EXISTS star_systems (
-      system_address    INTEGER PRIMARY KEY,
-      system_name       TEXT NOT NULL,
-      star_class        TEXT NOT NULL,
-      body_count        INTEGER,
-      non_body_count    INTEGER,
-      all_bodies_found  INTEGER NOT NULL,
+      system_address        INTEGER PRIMARY KEY,
+      system_name           TEXT    NOT NULL,
+      star_class            TEXT    NOT NULL,
+      body_count            INTEGER,
+      non_body_count        INTEGER,
+      all_bodies_found      INTEGER NOT NULL,
+      estimated_scan_value  INTEGER NOT NULL DEFAULT 0,
       UNIQUE(system_address, system_name)
     );
 
@@ -51,6 +58,7 @@ export function initDatabase(): void {
       distance        REAL    NOT NULL,
 
       sub_class       INTEGER,
+      star_type       TEXT,
       mass            REAL,
       radius          REAL,
       age             INTEGER,
@@ -72,6 +80,7 @@ export function initDatabase(): void {
       discovered_by   TEXT,
       mapped_by       TEXT,
       footfall_by     TEXT,
+      scan_value      INTEGER,
       UNIQUE(body_name)
     );
 
@@ -119,15 +128,143 @@ function processFSSDiscoveryScan(d: Record<string, unknown>): void {
   }
 }
 
+function getBaseStarScanValue(star_type: string): number {
+
+  let kValue: number;
+  let firstDiscovery: number = 2.6;
+
+  switch (star_type) {
+
+    case 'D':
+    case 'DA':
+    case 'DAB':
+    case 'DAO':
+    case 'DAZ':
+    case 'DAV':
+    case 'DB':
+    case 'DBZ':
+    case 'DO':
+    case 'DOV':
+    case 'DQ':
+    case 'DC':
+    case 'DCV':
+    case 'DX':
+      return 14057;
+
+    case 'N':
+    case 'H':
+      return 22628;
+
+    default:
+      return 1200;
+
+  }
+}
+
+function getBasePlanetScanValue(body_class: string, terraformable: boolean): number {
+
+  const q: number = 0.56591828;
+  let kValue: number;
+
+  switch (body_class.toLowerCase()) {
+    case 'ammonia world':
+      return 96932;
+
+    case 'earthlike body':
+      // always 'terraformable', so we always return the same value
+      return 64831 + 116295;
+
+    case 'water world':
+      kValue = 64831;
+
+      if (terraformable) {
+        kValue += 116295
+      }
+ 
+      return kValue;
+
+    case 'metal rich body':
+      kValue = 21790;
+
+      if (terraformable) {
+        kValue += 65631
+      }
+
+      return kValue;
+    
+    case 'sudarsky class ii gas giant':
+    case 'high metal content body':
+      kValue = 9654;
+
+      if (terraformable) {
+        kValue += 100677
+      }
+
+      return kValue;
+
+    case 'sudarsky class i gas giant':
+      return 1656;
+
+    default:
+      kValue = 300;
+
+      if (terraformable) {
+        kValue += 93328
+      }
+
+      return kValue;
+  }
+
+}
+
+function estimateBodyScanValue(k: number, mass: number, isFirstDiscoverer: boolean, isMapped: boolean, isFirstMapped: boolean, withEfficiencyBonus: boolean) {
+  const q = 0.56591828;
+  let mappingMultiplier = 1;
+
+  if(isMapped)
+  {
+      if(isFirstDiscoverer && isFirstMapped)
+      {
+          mappingMultiplier = 3.699622554;
+      }
+      else if(isFirstMapped)
+      {
+          mappingMultiplier = 8.0956;
+      }
+      else
+      {
+          mappingMultiplier = 3.3333333333;
+      }
+  }
+  let value = (k + k * q * Math.pow(mass,0.2)) * mappingMultiplier;
+  if(isMapped)
+  {
+      value += ((value * 0.3) > 555) ? value * 0.3 : 555;
+
+      if(withEfficiencyBonus)
+      {
+          value *= 1.25;
+      }
+  }
+
+  value = Math.max(500, value);
+  value *= (isFirstDiscoverer) ? 2.6 : 1;
+
+  return Math.round(value);
+}
+
 function processBodyScan(d: Record<string, unknown>): void {
   const systemAddress = typeof d.SystemAddress === 'number' ? d.SystemAddress : null;
   const bodyId        = typeof d.BodyID         === 'number' ? d.BodyID         : null;
   const bodyName      = typeof d.BodyName       === 'string' ? d.BodyName       : null;
   const distance      = typeof d.DistanceFromArrivalLS === 'number' ? d.DistanceFromArrivalLS : null;
 
+  const wasDiscovered = d.wasDiscovered === true;
+  const wasMapped     = d.wasMapped     === true;
+
   if (systemAddress === null || bodyId === null || bodyName === null || distance === null) return;
 
-  const isStar = typeof d.StarType === 'string';
+  const isStar    = typeof d.StarType === 'string';
 
   // Parse immediate parent from the Parents array
   let parentBodyId:   number | null = null;
@@ -140,12 +277,19 @@ function processBodyScan(d: Record<string, unknown>): void {
       parentBodyType = key; // "Star" | "Planet" | "Null"
     }
   }
-
+  
   let bodyType: string;
+  let k: number;
+  let scanValue: number;
   if (isStar) {
     bodyType = 'Star';
+    k = getBaseStarScanValue(typeof d.StarType === 'string' ? d.StarType : null)
+    scanValue = estimateBodyScanValue(k, typeof d.StellarMass === 'number' ? d.StellarMass : null, !wasDiscovered, false, !wasMapped, true);
   } else if (typeof d.PlanetClass === 'string') {
     bodyType = 'Planet';
+    let terraformable = d.TerraformState === 'Terraformable'
+    k = getBasePlanetScanValue(typeof d.PlanetClass === 'string' ? d.PlanetClass : null, terraformable)
+    scanValue = estimateBodyScanValue(k, typeof d.MassEM === 'number' ? d.MassEM : null, !wasDiscovered, false, !wasMapped, true);
   } else {
     bodyType = 'Unknown';
   }
@@ -153,14 +297,15 @@ function processBodyScan(d: Record<string, unknown>): void {
   db.prepare(`
     INSERT INTO bodies (
       system_address, body_id, body_name, body_type, distance,
-      sub_class, mass, radius, age, surface_temp, luminosity,
+      sub_class, star_type, mass, radius, age, surface_temp, luminosity,
       planet_class, atmosphere, atmosphere_type, volcanism, gravity, pressure, landable,
-      terraform_state, parent_body_id, parent_body_type
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      terraform_state, parent_body_id, parent_body_type, scan_value
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(body_name) DO UPDATE SET
       body_type        = excluded.body_type,
       distance         = excluded.distance,
       sub_class        = excluded.sub_class,
+      star_type        = excluded.star_type,
       mass             = excluded.mass,
       radius           = excluded.radius,
       age              = excluded.age,
@@ -175,7 +320,8 @@ function processBodyScan(d: Record<string, unknown>): void {
       landable         = excluded.landable,
       terraform_state  = excluded.terraform_state,
       parent_body_id   = excluded.parent_body_id,
-      parent_body_type = excluded.parent_body_type
+      parent_body_type = excluded.parent_body_type,
+      scan_value       = excluded.scan_value
   `).run(
     systemAddress,
     bodyId,
@@ -183,6 +329,7 @@ function processBodyScan(d: Record<string, unknown>): void {
     bodyType,
     distance,
     typeof d.Subclass           === 'number'  ? d.Subclass          : null,
+    typeof d.StarType           === 'string'  ? d.StarType          : null,
     isStar
       ? (typeof d.StellarMass   === 'number'  ? d.StellarMass       : null)
       : (typeof d.MassEM        === 'number'  ? d.MassEM            : null),
@@ -200,7 +347,18 @@ function processBodyScan(d: Record<string, unknown>): void {
     typeof d.TerraformState     === 'string'  ? d.TerraformState   : null,
     parentBodyId,
     parentBodyType,
+    scanValue,
   );
+
+  db.prepare(`
+    UPDATE star_systems
+    SET estimated_scan_value = (
+      SELECT COALESCE(SUM(scan_value), 0)
+      FROM bodies
+      WHERE system_address = ? AND body_type NOT IN ('Barycenter', 'Unknown')
+    )
+    WHERE system_address = ?
+  `).run(systemAddress, systemAddress);
 
   // Insert barycenter when first seen as a Null parent — barycenters are never
   // directly scanned so this is the only opportunity to record them.
