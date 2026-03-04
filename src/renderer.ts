@@ -2,6 +2,14 @@ import './index.css';
 import type { GameEvent, WatchingInfo, Commander, SystemBody, SystemVisit } from './index';
 import type { ChronicleAPI } from './preload';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const landableIcon = require('../static/landable.svg') as string;
+const terraformableIcon = require('../static/terraformable.svg') as string;
+const terraformedIcon = require('../static/terraform_other.svg') as string;
+const discoveredIcon = require('../static/discovered.svg') as string;
+const mappedIcon = require('../static/mapped.svg') as string;
+const footfallIcon = require('../static/footfall.svg') as string;
+
 declare global {
   interface Window {
     chronicle: ChronicleAPI;
@@ -57,7 +65,7 @@ function buildBodyEntries(bodies: SystemBody[]): BodyEntry[] {
   return result;
 }
 
-function createBodyGroup(key: string, members: SystemBody[]): HTMLLIElement {
+function createBodyGroup(key: string, members: SystemBody[], cmdrName: string): HTMLLIElement {
   const li = document.createElement('li');
   li.className = 'body-group';
 
@@ -79,14 +87,14 @@ function createBodyGroup(key: string, members: SystemBody[]): HTMLLIElement {
 
   const inner = document.createElement('ul');
   inner.className = 'body-group__list';
-  for (const body of members) inner.append(createBodyElement(body));
+  for (const body of members) inner.append(createBodyElement(body, cmdrName));
   details.append(inner);
 
   li.append(details);
   return li;
 }
 
-function createBodyElement(body: SystemBody): HTMLLIElement {
+function createBodyElement(body: SystemBody, cmdrName: string): HTMLLIElement {
   const li = document.createElement('li');
   li.className = `body body--${body.body_type.toLowerCase()}`;
 
@@ -108,33 +116,68 @@ function createBodyElement(body: SystemBody): HTMLLIElement {
 
   const landable = document.createElement('span');
   if (body.landable) {
-    landable.className = 'body__badge body__badge--landable';
-    landable.textContent = 'landable';
+    landable.className = 'body__icon';
+    const img = document.createElement('img');
+    img.src = landableIcon;
+    img.alt = 'landable';
+    landable.appendChild(img);
   } else {
     landable.className = 'body__col-empty';
   }
 
   const terraform_state = document.createElement('span');
-  if (body.terraform_state && body.terraform_state !== "") {
-    terraform_state.className = 'body__badge body__badge--terraformstate';
-    terraform_state.textContent = body.terraform_state.toLowerCase();
+  if (body.terraform_state && body.terraform_state.toLowerCase() == "terraformable") {
+    terraform_state.className = 'body__icon';
+    const img = document.createElement('img');
+    img.src = terraformableIcon;
+    img.alt = 'terraformable';
+    terraform_state.appendChild(img);
+  } else if (body.terraform_state && body.terraform_state !== "") {
+    terraform_state.className = 'body__icon';
+    const img = document.createElement('img');
+    img.src = terraformedIcon;
+    img.alt = 'terraformed?';
+    terraform_state.appendChild(img);
   } else {
     terraform_state.className = 'body__col-empty';
   }
 
-  const discovered_by = document.createElement('span');
-  discovered_by.className = 'body__class';
-  discovered_by.textContent = body.discovered_by
+  const discovered = document.createElement('span');
+  discovered.className = 'body__icon';
+  if (body.discovered_by && body.discovered_by == cmdrName) {
+    discovered.className = 'body__icon';
+    const img = document.createElement('img');
+    img.src = discoveredIcon;
+    img.alt = 'discovered first';
+    discovered.appendChild(img);
+  } else {
+    discovered.className = 'body__col-empty';
+  }
 
-  const mapped_by = document.createElement('span');
-  mapped_by.className = 'body__class';
-  mapped_by.textContent = body.mapped_by
+  const mapped = document.createElement('span');
+  if (body.mapped_by && body.mapped_by == cmdrName) {
+    mapped.className = 'body__icon';
+    const img = document.createElement('img');
+    img.src = mappedIcon;
+    img.alt = 'mapped first';
+    mapped.appendChild(img);
+  } else {
+    mapped.className = 'body__col-empty';
+  }
 
-  const footfall_by = document.createElement('span');
-  footfall_by.className = 'body__class';
-  footfall_by.textContent = body.footfall_by
+  const footfall = document.createElement('span');
+  if (body.footfall_by && body.footfall_by == cmdrName) {
+    footfall.className = 'body__icon';
+    const img = document.createElement('img');
+    img.src = footfallIcon;
+    img.alt = 'footfall first';
+    footfall.appendChild(img);
+  } else {
+    footfall.className = 'body__col-empty';
+  }
 
-  li.append(type, name, cls, dist, landable, terraform_state, discovered_by, mapped_by, footfall_by);
+
+  li.append(type, name, cls, dist, landable, terraform_state, discovered, mapped, footfall);
   return li;
 }
 
@@ -205,15 +248,15 @@ async function init(): Promise<void> {
 
   let cleanupListener: (() => void) | null = null;
 
-  async function refreshBodyList(systemAddress: number | null): Promise<void> {
+  async function refreshBodyList(systemAddress: number | null, cmdrName: string): Promise<void> {
     bodyList.innerHTML = '';
     if (systemAddress === null) return;
     const bodies = await window.chronicle.getBodies(systemAddress);
     for (const entry of buildBodyEntries(bodies)) {
       bodyList.append(
         entry.kind === 'group'
-          ? createBodyGroup(entry.key, entry.members)
-          : createBodyElement(entry.body)
+          ? createBodyGroup(entry.key, entry.members, cmdrName)
+          : createBodyElement(entry.body, cmdrName)
       );
     }
   }
@@ -224,8 +267,10 @@ async function init(): Promise<void> {
     for (const visit of visits) historyList.append(createHistoryElement(visit));
   }
 
+  const cmdr = await window.chronicle.getCommander();
+
   window.chronicle.onBodiesUpdated((systemAddress) => {
-    refreshBodyList(systemAddress);
+    refreshBodyList(systemAddress, cmdr.name);
   });
 
   window.chronicle.onHistoryUpdated(() => {
@@ -284,16 +329,15 @@ async function init(): Promise<void> {
 
   // Restore saved folder path in the input without auto-starting
   // (auto-start is handled by the main process via 'file:watching')
-  const cmdr = await window.chronicle.getCommander();
   setCommander(cmdr);
   await Promise.all([
-    refreshBodyList(cmdr?.currentSystem ?? null),
+    refreshBodyList(cmdr?.currentSystem ?? null, cmdr.name),
     refreshHistoryList(),
   ]);
 
   window.chronicle.onCommanderActive((cmdr) => {
     setCommander(cmdr);
-    refreshBodyList(cmdr.currentSystem ?? null);
+    refreshBodyList(cmdr.currentSystem ?? null, cmdr.name);
   });
 
   const savedFolder = await window.chronicle.getFolder();

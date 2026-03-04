@@ -29,7 +29,8 @@ body {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #fba706;
+  /* color: #fba706; */
+  color: #d45500;
 }
 
 /* Commander */
@@ -37,7 +38,8 @@ body {
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.06em;
-  color: #fba706;
+  /* color: #fba706; */
+  color: #d45500;
   /* margin-left: auto; */
 }
 
@@ -102,13 +104,13 @@ body {
 }
 
 .btn--primary {
-  background: #ffc252;
-  border-color: #ffc252;
+  background: #973c00;
+  border-color: #973c00;
   color: #fff;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: #fba706;
+  background: #d45500;
 }
 
 .event-count {
@@ -152,8 +154,8 @@ body {
 .tab:hover { color: #e2e8f0; }
 
 .tab--active {
-  color: #fba706;
-  border-bottom-color: #fba706;
+  color: #d45500;
+  border-bottom-color: #d45500;
 }
 
 /* Tab panels */
@@ -175,8 +177,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  color: #fba706;
-  border-bottom: 1px solid #fba706; 
+  color: #d45500;
+  border-bottom: 1px solid #d45500; 
 }
 
 .body-list {
@@ -190,7 +192,7 @@ body {
 
 .body {
   display: grid;
-  grid-template-columns: 70px 3fr 3fr 1fr 80px 120px 100px 100px 100px;
+  grid-template-columns: /* class */ 70px /* name */ 4fr /* type */ 4fr /* distance */ 1fr /* landable */ 25px /* */ 25px /* */ 25px /* */ 25px /* */ 25px;
   align-items: center;
   gap: 0.6rem;
   padding: 0.4rem 0.6rem;
@@ -200,7 +202,7 @@ body {
 }
 
 .body--planet { border-left-color: #6366f1; }
-.body--star   { border-left-color: #fba706; }
+.body--star   { border-left-color: #d45500; }
 
 .body__name {
   font-size: 0.85rem;
@@ -239,11 +241,19 @@ body {
   text-align: center;
 }
 
-.body__badge--type.body__badge--star    { color: #fba706; }
+.body__badge--type.body__badge--star    { color: #d45500; }
 .body__badge--type.body__badge--planet  { color: #818cf8; }
 .body__badge--type.body__badge--unknown { color: #475569; }
 
-.body__badge--landable { color: #4ade80; }
+.body__icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.body__icon img {
+  width: 18px;
+  height: 18px;
+}
 .body__badge--terraformstate { color: #4ade80; }
 
 .body__col-empty { display: block; }
