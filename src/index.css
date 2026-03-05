@@ -269,6 +269,71 @@ body {
   font-family: monospace;
 }
 
+/* Bio species prediction */
+.bio-species {
+  position: relative;
+}
+
+.bio-species__summary {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.bio-species__summary::-webkit-details-marker { display: none; }
+
+.bio-species__list {
+  position: absolute;
+  z-index: 100;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  padding: 6px 0;
+  list-style: none;
+  background: #1e2235;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  min-width: 280px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+.bio-species__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+}
+
+.bio-species__item--none {
+  color: #64748b;
+  font-style: italic;
+}
+
+.bio-species__item--uncertain {
+  opacity: 0.65;
+}
+
+.bio-species__name {
+  flex: 1;
+  color: #e2e8f0;
+}
+
+.bio-species__value {
+  color: #4ade80;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.bio-species__flag {
+  color: #fba706;
+  font-weight: 700;
+  font-size: 0.7rem;
+  cursor: help;
+}
+
 /* Belt cluster groups */
 .body-group {
   list-style: none;

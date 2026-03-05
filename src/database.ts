@@ -569,13 +569,24 @@ export interface SystemBody {
   mapped_by: string | null;
   footfall_by: string | null;
   biological_signals: number | null;
+  atmosphere_type: string | null;
+  surface_temp: number | null;
+  gravity: number | null;
+  pressure: number | null;
+  volcanism: string | null;
+  star_class: string | null;
 }
 
 export function getBodiesBySystem(systemAddress: number): SystemBody[] {
   return db.prepare(
-    `SELECT body_name, body_type, planet_class, landable, terraform_state, distance, discovered_by, mapped_by, footfall_by, biological_signals
-     FROM bodies WHERE system_address = ? AND body_type NOT IN ('Barycenter', 'Unknown')
-     ORDER BY body_id ASC`
+    `SELECT b.body_name, b.body_type, b.planet_class, b.landable, b.terraform_state, b.distance,
+            b.discovered_by, b.mapped_by, b.footfall_by, b.biological_signals,
+            b.atmosphere_type, b.surface_temp, b.gravity, b.pressure, b.volcanism,
+            ss.star_class
+     FROM bodies b
+     LEFT JOIN star_systems ss ON ss.system_address = b.system_address
+     WHERE b.system_address = ? AND b.body_type NOT IN ('Barycenter', 'Unknown')
+     ORDER BY b.body_id ASC`
   ).all(systemAddress) as SystemBody[];
 }
 

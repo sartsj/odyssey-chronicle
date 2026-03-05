@@ -1,6 +1,7 @@
 import './index.css';
 import type { GameEvent, WatchingInfo, Commander, SystemBody, SystemVisit } from './index';
 import type { ChronicleAPI } from './preload';
+import { getPossibleSpecies } from './bio_data';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const landableIcon = require('../static/landable.svg') as string;
@@ -180,15 +181,60 @@ function createBodyElement(body: SystemBody, cmdrName: string): HTMLLIElement {
   const biologicals = document.createElement('span');
   if (body.biological_signals && body.biological_signals > 0) {
     biologicals.className = 'body__icon body__icon--bio';
+
+    const details = document.createElement('details');
+    details.className = 'bio-species';
+
+    const summary = document.createElement('summary');
+    summary.className = 'bio-species__summary';
+
     const img = document.createElement('img');
     img.src = biologicalsIcon;
     img.alt = `${body.biological_signals} biological signal${body.biological_signals !== 1 ? 's' : ''}`;
     img.title = img.alt;
-    biologicals.appendChild(img);
+    summary.appendChild(img);
+
     const count = document.createElement('span');
     count.className = 'body__bio-count';
     count.textContent = `${body.biological_signals}`;
-    biologicals.appendChild(count);
+    summary.appendChild(count);
+
+    details.appendChild(summary);
+
+    const matches = getPossibleSpecies(body);
+    const ul = document.createElement('ul');
+    ul.className = 'bio-species__list';
+    if (matches.length === 0) {
+      const li2 = document.createElement('li');
+      li2.className = 'bio-species__item bio-species__item--none';
+      li2.textContent = 'No matches (insufficient scan data)';
+      ul.appendChild(li2);
+    } else {
+      for (const match of matches) {
+        const li2 = document.createElement('li');
+        li2.className = match.uncertain
+          ? 'bio-species__item bio-species__item--uncertain'
+          : 'bio-species__item';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'bio-species__name';
+        nameSpan.textContent = match.name;
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'bio-species__value';
+        valueSpan.textContent = `${match.value.toLocaleString()} cr`;
+        li2.appendChild(nameSpan);
+        li2.appendChild(valueSpan);
+        if (match.uncertain) {
+          const flag = document.createElement('span');
+          flag.className = 'bio-species__flag';
+          flag.textContent = '?';
+          flag.title = 'Conditions met but regional/special requirements unknown';
+          li2.appendChild(flag);
+        }
+        ul.appendChild(li2);
+      }
+    }
+    details.appendChild(ul);
+    biologicals.appendChild(details);
   } else {
     biologicals.className = 'body__col-empty';
   }
