@@ -22,6 +22,8 @@ export function initDatabase(): void {
 
   // Migration: add star_type column
   try { db.exec('ALTER TABLE bodies ADD COLUMN star_type TEXT'); } catch { /* already exists */ }
+  // Migration: add biological signals column
+  try { db.exec('ALTER TABLE bodies ADD COLUMN biological_signals INTEGER'); } catch { /* already exists */ }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS events (
@@ -77,10 +79,11 @@ export function initDatabase(): void {
       parent_body_id    INTEGER,
       parent_body_type  TEXT,
 
-      discovered_by   TEXT,
-      mapped_by       TEXT,
-      footfall_by     TEXT,
-      scan_value      INTEGER,
+      discovered_by       TEXT,
+      mapped_by           TEXT,
+      footfall_by         TEXT,
+      scan_value          INTEGER,
+      biological_signals  INTEGER,
       UNIQUE(body_name)
     );
 
@@ -126,6 +129,22 @@ function processFSSDiscoveryScan(d: Record<string, unknown>): void {
        WHERE system_address = ?`
     ).run(BodyCount, NonBodyCount, SystemAddress);
   }
+}
+
+function processFSSBodySignals(d: Record<string, unknown>): void {
+  const { BodyName, Signals } = d;
+  if (typeof BodyName !== 'string' || !Array.isArray(Signals)) return;
+
+  let bioCount = 0;
+  for (const signal of Signals as Array<Record<string, unknown>>) {
+    if (typeof signal.Type === 'string' && signal.Type.toLowerCase().includes('biological')) {
+      bioCount += typeof signal.Count === 'number' ? signal.Count : 0;
+    }
+  }
+
+  db.prepare(
+    'UPDATE bodies SET biological_signals = ? WHERE body_name = ?'
+  ).run(bioCount, BodyName);
 }
 
 function getBaseStarScanValue(star_type: string): number {
@@ -387,6 +406,14 @@ function replayScanEventsForSystem(systemAddress: number): void {
   for (const { data } of scanRows) {
     processBodyScan(JSON.parse(data) as Record<string, unknown>);
   }
+
+  const bioRows = db.prepare(
+    `SELECT data FROM events WHERE type = 'FSSBodySignals'
+     AND json_extract(data, '$.SystemAddress') = ? ORDER BY id ASC`
+  ).all(systemAddress) as Array<{ data: string }>;
+  for (const { data } of bioRows) {
+    processFSSBodySignals(JSON.parse(data) as Record<string, unknown>);
+  }
 }
 
 export function insertEvent(event: GameEvent, commanderFid: string | null = null): void {
@@ -459,6 +486,11 @@ export function insertEvent(event: GameEvent, commanderFid: string | null = null
   // Upsert bodies from Scan events
   if (event.type === 'Scan') {
     processBodyScan(event.data);
+  }
+
+  // Update biological signals count from FSSBodySignals events
+  if (event.type === 'FSSBodySignals') {
+    processFSSBodySignals(event.data);
   }
 }
 
@@ -536,11 +568,12 @@ export interface SystemBody {
   discovered_by: string | null;
   mapped_by: string | null;
   footfall_by: string | null;
+  biological_signals: number | null;
 }
 
 export function getBodiesBySystem(systemAddress: number): SystemBody[] {
   return db.prepare(
-    `SELECT body_name, body_type, planet_class, landable, terraform_state, distance, discovered_by, mapped_by, footfall_by
+    `SELECT body_name, body_type, planet_class, landable, terraform_state, distance, discovered_by, mapped_by, footfall_by, biological_signals
      FROM bodies WHERE system_address = ? AND body_type NOT IN ('Barycenter', 'Unknown')
      ORDER BY body_id ASC`
   ).all(systemAddress) as SystemBody[];

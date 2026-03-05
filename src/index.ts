@@ -304,6 +304,12 @@ function readNewLines(win: BrowserWindow): void {
           win.webContents.send('bodies:updated', event.data.SystemAddress);
         }
 
+        if (event.type === 'FSSBodySignals' &&
+            typeof event.data.SystemAddress === 'number' &&
+            event.data.SystemAddress === activeCommander?.currentSystem) {
+          win.webContents.send('bodies:updated', event.data.SystemAddress);
+        }
+
         if (event.type === 'Shutdown') {
           // Current session ended — stop watching and poll for the next file
           const folder = readConfig().folder;

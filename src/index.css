@@ -192,7 +192,7 @@ body {
 
 .body {
   display: grid;
-  grid-template-columns: /* class */ 70px /* name */ 4fr /* type */ 4fr /* distance */ 1fr /* landable */ 25px /* */ 25px /* */ 25px /* */ 25px /* */ 25px;
+  grid-template-columns: /* class */ 70px /* name */ 4fr /* type */ 4fr /* distance */ 1fr /* landable */ 25px /* terraform */ 25px /* discovered */ 25px /* mapped */ 25px /* footfall */ 25px /* bio */ 40px;
   align-items: center;
   gap: 0.6rem;
   padding: 0.4rem 0.6rem;
@@ -257,6 +257,17 @@ body {
 .body__badge--terraformstate { color: #4ade80; }
 
 .body__col-empty { display: block; }
+
+.body__icon--bio {
+  gap: 3px;
+}
+
+.body__bio-count {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #4ade80;
+  font-family: monospace;
+}
 
 /* Belt cluster groups */
 .body-group {

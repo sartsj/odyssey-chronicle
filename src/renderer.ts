@@ -9,6 +9,7 @@ const terraformedIcon = require('../static/terraform_other.svg') as string;
 const discoveredIcon = require('../static/discovered.svg') as string;
 const mappedIcon = require('../static/mapped.svg') as string;
 const footfallIcon = require('../static/footfall.svg') as string;
+const biologicalsIcon = require('../static/biologicals.svg') as string;
 
 declare global {
   interface Window {
@@ -176,8 +177,23 @@ function createBodyElement(body: SystemBody, cmdrName: string): HTMLLIElement {
     footfall.className = 'body__col-empty';
   }
 
+  const biologicals = document.createElement('span');
+  if (body.biological_signals && body.biological_signals > 0) {
+    biologicals.className = 'body__icon body__icon--bio';
+    const img = document.createElement('img');
+    img.src = biologicalsIcon;
+    img.alt = `${body.biological_signals} biological signal${body.biological_signals !== 1 ? 's' : ''}`;
+    img.title = img.alt;
+    biologicals.appendChild(img);
+    const count = document.createElement('span');
+    count.className = 'body__bio-count';
+    count.textContent = `${body.biological_signals}`;
+    biologicals.appendChild(count);
+  } else {
+    biologicals.className = 'body__col-empty';
+  }
 
-  li.append(type, name, cls, dist, landable, terraform_state, discovered, mapped, footfall);
+  li.append(type, name, cls, dist, landable, terraform_state, discovered, mapped, footfall, biologicals);
   return li;
 }
 
