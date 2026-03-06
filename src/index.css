@@ -192,7 +192,7 @@ body {
 
 .body {
   display: grid;
-  grid-template-columns: /* class */ 70px /* name */ 4fr /* type */ 4fr /* distance */ 1fr /* landable */ 25px /* terraform */ 25px /* discovered */ 25px /* mapped */ 25px /* footfall */ 25px /* bio */ 40px;
+  grid-template-columns: /* badge */ 70px /* name */ 2fr /* dist */ 1fr /* class */ 2fr /* atmos */ 2fr /* temp */ 60px /* grav */ 55px /* press */ 65px /* landable */ 25px /* terraform */ 25px /* bio */ 40px /* discovered */ 25px /* mapped */ 25px /* footfall */ 25px;
   align-items: center;
   gap: 0.6rem;
   padding: 0.4rem 0.6rem;
@@ -226,6 +226,15 @@ body {
   white-space: nowrap;
   font-family: monospace;
   /* text-align: right; */
+}
+
+.body__stat {
+  font-size: 0.75rem;
+  color: #475569;
+  white-space: nowrap;
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .body__badge {

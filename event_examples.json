@@ -1,0 +1,747 @@
+{
+    "timestamp": "2026-02-27T20:09:00Z",
+    "event": "FSDTarget",
+    "Name": "Byua Eurl UW-H b43-0",
+    "SystemAddress": 757126016881,
+    "StarClass": "M",
+    "RemainingJumpsInRoute": 124
+}
+
+{
+    "timestamp": "2026-02-27T20:10:00Z",
+    "event": "StartJump",
+    "JumpType": "Hyperspace",
+    "Taxi": false,
+    "StarSystem": "Byua Eurl UW-H b43-0",
+    "SystemAddress": 757126016881,
+    "StarClass": "M"
+}
+
+{
+    "timestamp": "2026-02-27T20:10:19Z",
+    "event": "FSDJump",
+    "Taxi": false,
+    "Multicrew": false,
+    "StarSystem": "Byua Eurl UW-H b43-0",
+    "SystemAddress": 757126016881,
+    "StarPos": [
+        6428.65625,
+        1145.18750,
+        6274.34375
+    ],
+    "SystemAllegiance": "",
+    "SystemEconomy": "$economy_None;",
+    "SystemEconomy_Localised": "None",
+    "SystemSecondEconomy": "$economy_None;",
+    "SystemSecondEconomy_Localised": "None",
+    "SystemGovernment": "$government_None;",
+    "SystemGovernment_Localised": "None",
+    "SystemSecurity": "$GAlAXY_MAP_INFO_state_anarchy;",
+    "SystemSecurity_Localised": "Anarchy",
+    "Population": 0,
+    "Body": "Byua Eurl UW-H b43-0",
+    "BodyID": 0,
+    "BodyType": "Star",
+    "JumpDist": 71.986,
+    "FuelUsed": 5.126384,
+    "FuelLevel": 24.873615
+}
+
+{
+    "timestamp": "2026-03-03T22:42:34Z",
+    "event": "FSDJump",
+    "Taxi": false,
+    "Multicrew": false,
+    "StarSystem": "Ploi Aec DE-F c1",
+    "SystemAddress": 371482007554,
+    "StarPos": [
+        7579.96875,
+        1068.37500,
+        6617.46875
+    ],
+    "SystemAllegiance": "",
+    "SystemEconomy": "$economy_None;",
+    "SystemEconomy_Localised": "None",
+    "SystemSecondEconomy": "$economy_None;",
+    "SystemSecondEconomy_Localised": "None",
+    "SystemGovernment": "$government_None;",
+    "SystemGovernment_Localised": "None",
+    "SystemSecurity": "$GAlAXY_MAP_INFO_state_anarchy;",
+    "SystemSecurity_Localised": "Anarchy",
+    "Population": 0,
+    "Body": "Ploi Aec DE-F c1",
+    "BodyID": 0,
+    "BodyType": "Star",
+    "JumpDist": 65.133,
+    "FuelUsed": 4.061292,
+    "FuelLevel": 27.938707
+}
+
+{
+    "timestamp": "2026-02-27T20:10:24Z",
+    "event": "Scan",
+    "ScanType": "AutoScan",
+    "BodyName": "Byua Eurl UW-H b43-0 A Belt Cluster 3",
+    "BodyID": 4,
+    "Parents": [
+        {
+            "Ring": 1
+        },
+        {
+            "Star": 0
+        }
+    ],
+    "StarSystem": "Byua Eurl UW-H b43-0",
+    "SystemAddress": 757126016881,
+    "DistanceFromArrivalLS": 4.940234,
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-02-27T20:10:24Z",
+    "event": "Scan",
+    "ScanType": "AutoScan",
+    "BodyName": "Byua Eurl UW-H b43-0",
+    "BodyID": 0,
+    "StarSystem": "Byua Eurl UW-H b43-0",
+    "SystemAddress": 757126016881,
+    "DistanceFromArrivalLS": 0.000000,
+    "StarType": "M",
+    "Subclass": 4,
+    "StellarMass": 0.402344,
+    "Radius": 392980384.000000,
+    "AbsoluteMagnitude": 8.994659,
+    "Age_MY": 6100,
+    "SurfaceTemperature": 2947.000000,
+    "Luminosity": "Va",
+    "RotationPeriod": 189685.458630,
+    "AxialTilt": 0.000000,
+    "Rings": [
+        {
+            "Name": "Byua Eurl UW-H b43-0 A Belt",
+            "RingClass": "eRingClass_Metalic",
+            "MassMT": 8.4905e+13,
+            "InnerRad": 6.8577e+08,
+            "OuterRad": 1.7814e+09
+        },
+        {
+            "Name": "Byua Eurl UW-H b43-0 B Belt",
+            "RingClass": "eRingClass_Icy",
+            "MassMT": 4.291e+16,
+            "InnerRad": 5.0438e+09,
+            "OuterRad": 1.281e+11
+        }
+    ],
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-02-27T20:10:24Z",
+    "event": "Scan",
+    "ScanType": "AutoScan",
+    "BodyName": "Byua Eurl UW-H b43-0 1",
+    "BodyID": 6,
+    "Parents": [
+        {
+            "Star": 0
+        }
+    ],
+    "StarSystem": "Byua Eurl UW-H b43-0",
+    "SystemAddress": 757126016881,
+    "DistanceFromArrivalLS": 9.842178,
+    "TidalLock": true,
+    "TerraformState": "",
+    "PlanetClass": "High metal content body",
+    "Atmosphere": "",
+    "AtmosphereType": "None",
+    "Volcanism": "minor silicate vapour geysers volcanism",
+    "MassEM": 0.448430,
+    "Radius": 4773460.500000,
+    "SurfaceGravity": 7.844001,
+    "SurfaceTemperature": 682.564941,
+    "SurfacePressure": 0.000000,
+    "Landable": true,
+    "Materials": [
+        {
+            "Name": "iron",
+            "Percent": 21.782291
+        },
+        {
+            "Name": "nickel",
+            "Percent": 16.475212
+        },
+        {
+            "Name": "sulphur",
+            "Percent": 15.558611
+        },
+        {
+            "Name": "carbon",
+            "Percent": 13.083180
+        },
+        {
+            "Name": "chromium",
+            "Percent": 9.796220
+        },
+        {
+            "Name": "manganese",
+            "Percent": 8.995864
+        },
+        {
+            "Name": "phosphorus",
+            "Percent": 8.376077
+        },
+        {
+            "Name": "arsenic",
+            "Percent": 2.053556
+        },
+        {
+            "Name": "niobium",
+            "Percent": 1.488703
+        },
+        {
+            "Name": "tin",
+            "Percent": 1.419222
+        },
+        {
+            "Name": "antimony",
+            "Percent": 0.971067
+        }
+    ],
+    "Composition": {
+        "Ice": 0.000000,
+        "Rock": 0.673729,
+        "Metal": 0.326271
+    },
+    "SemiMajorAxis": 2950610935.688019,
+    "Eccentricity": 0.000000,
+    "OrbitalInclination": 0.000532,
+    "Periapsis": 193.680406,
+    "OrbitalPeriod": 136853.456497,
+    "AscendingNode": 2.669375,
+    "MeanAnomaly": 18.832570,
+    "RotationPeriod": 137799.643425,
+    "AxialTilt": -0.096673,
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-02-27T20:10:24Z",
+    "event": "FSSDiscoveryScan",
+    "Progress": 0.165332,
+    "BodyCount": 21,
+    "NonBodyCount": 14,
+    "SystemName": "Byua Eurl UW-H b43-0",
+    "SystemAddress": 757126016881
+}
+
+{
+    "timestamp": "2026-02-27T21:43:22Z",
+    "event": "Scan",
+    "ScanType": "Detailed",
+    "BodyName": "Byua Eurl UW-H b43-0 3",
+    "BodyID": 31,
+    "Parents": [
+        {
+            "Star": 0
+        }
+    ],
+    "StarSystem": "Byua Eurl UW-H b43-0",
+    "SystemAddress": 757126016881,
+    "DistanceFromArrivalLS": 1218.725263,
+    "TidalLock": false,
+    "TerraformState": "",
+    "PlanetClass": "Sudarsky class II gas giant",
+    "Atmosphere": "",
+    "AtmosphereComposition": [
+        {
+            "Name": "Hydrogen",
+            "Percent": 73.707306
+        },
+        {
+            "Name": "Helium",
+            "Percent": 26.292688
+        }
+    ],
+    "Volcanism": "",
+    "MassEM": 729.072449,
+    "Radius": 76492664.000000,
+    "SurfaceGravity": 49.663864,
+    "SurfaceTemperature": 173.522003,
+    "SurfacePressure": 0.000000,
+    "Landable": false,
+    "SemiMajorAxis": 365417486429.214478,
+    "Eccentricity": 0.000146,
+    "OrbitalInclination": -0.179085,
+    "Periapsis": 159.225886,
+    "OrbitalPeriod": 188613092.899323,
+    "AscendingNode": 16.972330,
+    "MeanAnomaly": 7.470939,
+    "RotationPeriod": 55057.264849,
+    "AxialTilt": 0.230654,
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-02-27T20:06:26Z",
+    "event": "LoadGame",
+    "FID": "F307323",
+    "Commander": "Sartsj",
+    "Horizons": true,
+    "Odyssey": true,
+    "Ship": "Mandalay",
+    "ShipID": 17,
+    "ShipName": "",
+    "ShipIdent": "",
+    "FuelLevel": 30.000000,
+    "FuelCapacity": 32.000000,
+    "StartLanded": true,
+    "GameMode": "Solo",
+    "Credits": 2954201801,
+    "Loan": 0,
+    "language": "English/UK",
+    "gameversion": "4.3.1.0",
+    "build": "r324607/r0 "
+}
+
+{
+    "timestamp": "2026-02-27T20:06:39Z",
+    "event": "Location",
+    "Latitude": -18.897642,
+    "Longitude": -82.280869,
+    "DistFromStarLS": 66.700919,
+    "Docked": false,
+    "Taxi": false,
+    "Multicrew": false,
+    "StarSystem": "Byua Eurl VC-G b44-0",
+    "SystemAddress": 756320710521,
+    "StarPos": [
+        6356.84375,
+        1140.25000,
+        6275.12500
+    ],
+    "SystemAllegiance": "",
+    "SystemEconomy": "$economy_None;",
+    "SystemEconomy_Localised": "None",
+    "SystemSecondEconomy": "$economy_None;",
+    "SystemSecondEconomy_Localised": "None",
+    "SystemGovernment": "$government_None;",
+    "SystemGovernment_Localised": "None",
+    "SystemSecurity": "$GAlAXY_MAP_INFO_state_anarchy;",
+    "SystemSecurity_Localised": "Anarchy",
+    "Population": 0,
+    "Body": "Byua Eurl VC-G b44-0 A 3",
+    "BodyID": 9,
+    "BodyType": "Planet"
+}
+
+{
+    "timestamp": "2026-02-28T19:00:18Z",
+    "event": "ScanBaryCentre",
+    "StarSystem": "Byua Eurl XK-N c23-1",
+    "SystemAddress": 369871460298,
+    "BodyID": 1,
+    "SemiMajorAxis": 608124876022.338867,
+    "Eccentricity": 0.208898,
+    "OrbitalInclination": -101.342884,
+    "Periapsis": 79.963156,
+    "OrbitalPeriod": 1186912059.783936,
+    "AscendingNode": 107.205061,
+    "MeanAnomaly": 179.594746
+}
+
+{
+    "timestamp": "2026-02-28T19:00:19Z",
+    "event": "Scan",
+    "ScanType": "AutoScan",
+    "BodyName": "Byua Eurl XK-N c23-1 A",
+    "BodyID": 2,
+    "Parents": [
+        {
+            "Null": 1
+        },
+        {
+            "Null": 0
+        }
+    ],
+    "StarSystem": "Byua Eurl XK-N c23-1",
+    "SystemAddress": 369871460298,
+    "DistanceFromArrivalLS": 0.000000,
+    "StarType": "K",
+    "Subclass": 2,
+    "StellarMass": 0.839844,
+    "Radius": 624226496.000000,
+    "AbsoluteMagnitude": 5.807541,
+    "Age_MY": 12636,
+    "SurfaceTemperature": 4870.000000,
+    "Luminosity": "Va",
+    "SemiMajorAxis": 1069735229.015350,
+    "Eccentricity": 0.121822,
+    "OrbitalInclination": -47.602581,
+    "Periapsis": 127.613516,
+    "OrbitalPeriod": 112055.110931,
+    "AscendingNode": 73.616728,
+    "MeanAnomaly": 199.888346,
+    "RotationPeriod": 372140.292138,
+    "AxialTilt": 0.000000,
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-02-28T19:00:18Z",
+    "event": "Scan",
+    "ScanType": "AutoScan",
+    "BodyName": "Byua Eurl XK-N c23-1 B",
+    "BodyID": 3,
+    "Parents": [
+        {
+            "Null": 1
+        },
+        {
+            "Null": 0
+        }
+    ],
+    "StarSystem": "Byua Eurl XK-N c23-1",
+    "SystemAddress": 369871460298,
+    "DistanceFromArrivalLS": 13.711548,
+    "StarType": "M",
+    "Subclass": 5,
+    "StellarMass": 0.343750,
+    "Radius": 375788160.000000,
+    "AbsoluteMagnitude": 9.278564,
+    "Age_MY": 12636,
+    "SurfaceTemperature": 2823.000000,
+    "Luminosity": "Va",
+    "SemiMajorAxis": 2613557398.319244,
+    "Eccentricity": 0.121822,
+    "OrbitalInclination": -47.602581,
+    "Periapsis": 307.613511,
+    "OrbitalPeriod": 112055.110931,
+    "AscendingNode": 73.616728,
+    "MeanAnomaly": 199.886418,
+    "RotationPeriod": 184563.387693,
+    "AxialTilt": 0.000000,
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-02-28T19:00:21Z",
+    "event": "Scan",
+    "ScanType": "Detailed",
+    "BodyName": "Byua Eurl XK-N c23-1 C",
+    "BodyID": 4,
+    "Parents": [
+        {
+            "Null": 0
+        }
+    ],
+    "StarSystem": "Byua Eurl XK-N c23-1",
+    "SystemAddress": 369871460298,
+    "DistanceFromArrivalLS": 8078.429984,
+    "StarType": "K",
+    "Subclass": 7,
+    "StellarMass": 0.515625,
+    "Radius": 487771136.000000,
+    "AbsoluteMagnitude": 7.138885,
+    "Age_MY": 12636,
+    "SurfaceTemperature": 4055.000000,
+    "Luminosity": "Va",
+    "SemiMajorAxis": 1395933628082.275391,
+    "Eccentricity": 0.208898,
+    "OrbitalInclination": -101.342884,
+    "Periapsis": 259.963150,
+    "OrbitalPeriod": 1186912059.783936,
+    "AscendingNode": 107.205061,
+    "MeanAnomaly": 179.594747,
+    "RotationPeriod": 397021.273625,
+    "AxialTilt": 0.000000,
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-02-28T19:00:53Z",
+    "event": "Scan",
+    "ScanType": "Detailed",
+    "BodyName": "Byua Eurl XK-N c23-1 AB 1",
+    "BodyID": 5,
+    "Parents": [
+        {
+            "Null": 1
+        },
+        {
+            "Null": 0
+        }
+    ],
+    "StarSystem": "Byua Eurl XK-N c23-1",
+    "SystemAddress": 369871460298,
+    "DistanceFromArrivalLS": 156.326152,
+    "TidalLock": true,
+    "TerraformState": "",
+    "PlanetClass": "High metal content body",
+    "Atmosphere": "hot thick carbon dioxide atmosphere",
+    "AtmosphereType": "CarbonDioxide",
+    "AtmosphereComposition": [
+        {
+            "Name": "CarbonDioxide",
+            "Percent": 97.726425
+        },
+        {
+            "Name": "SulphurDioxide",
+            "Percent": 2.273576
+        }
+    ],
+    "Volcanism": "",
+    "MassEM": 0.661209,
+    "Radius": 5369965.500000,
+    "SurfaceGravity": 9.139134,
+    "SurfaceTemperature": 990.533447,
+    "SurfacePressure": 2631638.750000,
+    "Landable": false,
+    "Composition": {
+        "Ice": 0.000000,
+        "Rock": 0.670430,
+        "Metal": 0.329570
+    },
+    "SemiMajorAxis": 45918481349.945068,
+    "Eccentricity": 0.002053,
+    "OrbitalInclination": -0.029688,
+    "Periapsis": 76.030394,
+    "OrbitalPeriod": 4932386.994362,
+    "AscendingNode": 10.190270,
+    "MeanAnomaly": 145.710696,
+    "RotationPeriod": 4932405.630832,
+    "AxialTilt": 0.365613,
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-02-28T19:01:44Z",
+    "event": "Scan",
+    "ScanType": "Detailed",
+    "BodyName": "Byua Eurl XK-N c23-1 ABC 1",
+    "BodyID": 8,
+    "Parents": [
+        {
+            "Null": 0
+        }
+    ],
+    "StarSystem": "Byua Eurl XK-N c23-1",
+    "SystemAddress": 369871460298,
+    "DistanceFromArrivalLS": 19205.857107,
+    "TidalLock": false,
+    "TerraformState": "",
+    "PlanetClass": "High metal content body",
+    "Atmosphere": "helium atmosphere",
+    "AtmosphereType": "Helium",
+    "AtmosphereComposition": [
+        {
+            "Name": "Helium",
+            "Percent": 78.937668
+        },
+        {
+            "Name": "Hydrogen",
+            "Percent": 19.092567
+        },
+        {
+            "Name": "Neon",
+            "Percent": 1.969776
+        }
+    ],
+    "Volcanism": "major silicate vapour geysers volcanism",
+    "MassEM": 8.732407,
+    "Radius": 11048999.000000,
+    "SurfaceGravity": 28.510016,
+    "SurfaceTemperature": 35.623692,
+    "SurfacePressure": 20492.636719,
+    "Landable": false,
+    "Composition": {
+        "Ice": 0.007963,
+        "Rock": 0.637856,
+        "Metal": 0.354181
+    },
+    "SemiMajorAxis": 5588544607162.475586,
+    "Eccentricity": 0.222452,
+    "OrbitalInclination": -147.436761,
+    "Periapsis": 176.725851,
+    "OrbitalPeriod": 5527105987.071991,
+    "AscendingNode": 98.283987,
+    "MeanAnomaly": 56.218300,
+    "RotationPeriod": 170226.192477,
+    "AxialTilt": 0.189072,
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-02-28T19:00:49Z",
+    "event": "Scan",
+    "ScanType": "Detailed",
+    "BodyName": "Byua Eurl XK-N c23-1 AB 2",
+    "BodyID": 6,
+    "Parents": [
+        {
+            "Null": 1
+        },
+        {
+            "Null": 0
+        }
+    ],
+    "StarSystem": "Byua Eurl XK-N c23-1",
+    "SystemAddress": 369871460298,
+    "DistanceFromArrivalLS": 352.654044,
+    "TidalLock": true,
+    "TerraformState": "Terraformable",
+    "PlanetClass": "High metal content body",
+    "Atmosphere": "hot thick carbon dioxide atmosphere",
+    "AtmosphereType": "CarbonDioxide",
+    "AtmosphereComposition": [
+        {
+            "Name": "CarbonDioxide",
+            "Percent": 98.951111
+        },
+        {
+            "Name": "SulphurDioxide",
+            "Percent": 1.048047
+        }
+    ],
+    "Volcanism": "",
+    "MassEM": 0.595087,
+    "Radius": 5200642.000000,
+    "SurfaceGravity": 8.769515,
+    "SurfaceTemperature": 704.218384,
+    "SurfacePressure": 3064523.250000,
+    "Landable": false,
+    "Composition": {
+        "Ice": 0.000000,
+        "Rock": 0.670428,
+        "Metal": 0.329572
+    },
+    "SemiMajorAxis": 104236805438.995361,
+    "Eccentricity": 0.008142,
+    "OrbitalInclination": -0.005411,
+    "Periapsis": 93.433931,
+    "OrbitalPeriod": 16869705.319405,
+    "AscendingNode": 93.095540,
+    "MeanAnomaly": 235.896340,
+    "RotationPeriod": 16869767.984197,
+    "AxialTilt": 0.456241,
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-03-03T22:44:39Z",
+    "event": "FSSBodySignals",
+    "BodyName": "Ploi Aec DE-F c1 2 d",
+    "BodyID": 25,
+    "SystemAddress": 371482007554,
+    "Signals": [
+        {
+            "Type": "$SAA_SignalType_Biological;",
+            "Type_Localised": "Biological",
+            "Count": 4
+        }
+    ]
+}
+
+{
+    "timestamp": "2026-03-03T22:48:30Z",
+    "event": "SAAScanComplete",
+    "BodyName": "Ploi Aec DE-F c1 2 d",
+    "SystemAddress": 371482007554,
+    "BodyID": 25,
+    "ProbesUsed": 2,
+    "EfficiencyTarget": 2
+}
+
+{
+    "timestamp": "2026-03-03T22:52:20Z",
+    "event": "ScanOrganic",
+    "ScanType": "Log",
+    "Genus": "$Codex_Ent_Stratum_Genus_Name;",
+    "Genus_Localised": "Stratum",
+    "Species": "$Codex_Ent_Stratum_02_Name;",
+    "Species_Localised": "Stratum Paleas",
+    "Variant": "$Codex_Ent_Stratum_02_K_Name;",
+    "Variant_Localised": "Stratum Paleas - Lime",
+    "WasLogged": false,
+    "SystemAddress": 371482007554,
+    "Body": 25
+}
+
+{
+    "timestamp": "2026-03-03T22:53:51Z",
+    "event": "ScanOrganic",
+    "ScanType": "Sample",
+    "Genus": "$Codex_Ent_Stratum_Genus_Name;",
+    "Genus_Localised": "Stratum",
+    "Species": "$Codex_Ent_Stratum_02_Name;",
+    "Species_Localised": "Stratum Paleas",
+    "Variant": "$Codex_Ent_Stratum_02_K_Name;",
+    "Variant_Localised": "Stratum Paleas - Lime",
+    "WasLogged": false,
+    "SystemAddress": 371482007554,
+    "Body": 25
+}
+
+{
+    "timestamp": "2026-03-03T22:55:52Z",
+    "event": "ScanOrganic",
+    "ScanType": "Sample",
+    "Genus": "$Codex_Ent_Stratum_Genus_Name;",
+    "Genus_Localised": "Stratum",
+    "Species": "$Codex_Ent_Stratum_02_Name;",
+    "Species_Localised": "Stratum Paleas",
+    "Variant": "$Codex_Ent_Stratum_02_K_Name;",
+    "Variant_Localised": "Stratum Paleas - Lime",
+    "WasLogged": false,
+    "SystemAddress": 371482007554,
+    "Body": 25
+}
+
+{
+    "timestamp": "2026-03-03T22:55:57Z",
+    "event": "ScanOrganic",
+    "ScanType": "Analyse",
+    "Genus": "$Codex_Ent_Stratum_Genus_Name;",
+    "Genus_Localised": "Stratum",
+    "Species": "$Codex_Ent_Stratum_02_Name;",
+    "Species_Localised": "Stratum Paleas",
+    "Variant": "$Codex_Ent_Stratum_02_K_Name;",
+    "Variant_Localised": "Stratum Paleas - Lime",
+    "WasLogged": false,
+    "SystemAddress": 371482007554,
+    "Body": 25
+}
+
+{
+    "timestamp": "2026-03-03T23:06:22Z",
+    "event": "Embark",
+    "SRV": false,
+    "Taxi": false,
+    "Multicrew": false,
+    "ID": 17,
+    "StarSystem": "Ploi Aec DE-F c1",
+    "SystemAddress": 371482007554,
+    "Body": "Ploi Aec DE-F c1 2 d",
+    "BodyID": 25,
+    "OnStation": false,
+    "OnPlanet": true
+}

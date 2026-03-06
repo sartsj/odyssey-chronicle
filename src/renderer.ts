@@ -178,6 +178,26 @@ function createBodyElement(body: SystemBody, cmdrName: string): HTMLLIElement {
     footfall.className = 'body__col-empty';
   }
 
+  const EARTH_GRAVITY  = 9.797759;
+  const ATM_PRESSURE   = 101231.656250;
+
+  const atmosphere = document.createElement('span');
+  atmosphere.className = 'body__class';
+  atmosphere.textContent = body.atmosphere?.replace('atmosphere', '') ?? '';
+  atmosphere.title = body.atmosphere ?? '';
+
+  const temperature = document.createElement('span');
+  temperature.className = 'body__stat';
+  temperature.textContent = body.surface_temp != null ? `${body.surface_temp.toFixed(0)} K` : '';
+
+  const gravity = document.createElement('span');
+  gravity.className = 'body__stat';
+  gravity.textContent = body.gravity != null ? `${(body.gravity / EARTH_GRAVITY).toFixed(2)} G` : '';
+
+  const pressure = document.createElement('span');
+  pressure.className = 'body__stat';
+  pressure.textContent = body.pressure != null ? `${(body.pressure / ATM_PRESSURE).toFixed(2)} atm` : '';
+
   const biologicals = document.createElement('span');
   if (body.biological_signals && body.biological_signals > 0) {
     biologicals.className = 'body__icon body__icon--bio';
@@ -239,7 +259,7 @@ function createBodyElement(body: SystemBody, cmdrName: string): HTMLLIElement {
     biologicals.className = 'body__col-empty';
   }
 
-  li.append(type, name, cls, dist, landable, terraform_state, discovered, mapped, footfall, biologicals);
+  li.append(type, name, dist, cls, atmosphere, temperature, gravity, pressure, landable, terraform_state, biologicals, discovered, mapped, footfall);
   return li;
 }
 
