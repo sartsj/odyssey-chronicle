@@ -3,6 +3,7 @@
  * https://github.com/Silarn/EDMC-BioScan/tree/master/src/bio_scan/bio_data
  */
 import type { SystemBody } from './database';
+import { findRegion, regionName, systemInRegion } from './region_map';
 
 export interface BioRuleset {
   atmosphere?: string[];
@@ -1719,6 +1720,7 @@ function matchesStar(
  */
 function checkRuleset(
   ruleset: BioRuleset,
+  species_name: string,
   body: SystemBody,
 ): 'no' | 'yes' | 'uncertain' {
   const atmoType = body.atmosphere_type ?? null;
@@ -1729,14 +1731,20 @@ function checkRuleset(
   if (ruleset.atmosphere !== undefined) {
     if (!ruleset.atmosphere.some(
       (a) => a.toLowerCase() === atmoNorm.toLowerCase()
-    )) return 'no';
+    )) {
+      console.log(`Atmosphere does not match ruleset for ${species_name}`);
+      return 'no';
+    }
   }
 
   // Body type
   if (ruleset.body_type !== undefined && body.planet_class !== null && body.planet_class !== undefined) {
     if (!ruleset.body_type.some(
       (bt) => bt.toLowerCase() === body.planet_class!.toLowerCase()
-    )) return 'no';
+    )) {
+      console.log(`Body type does not match ruleset for ${species_name}`);
+      return 'no';
+    }
   }
 
   // Gravity — journal SurfaceGravity is in m/s²; rulesets use G
@@ -1745,18 +1753,30 @@ function checkRuleset(
     ? body.gravity / EARTH_GRAVITY
     : null;
   if (ruleset.min_gravity !== undefined && gravityG !== null) {
-    if (gravityG < ruleset.min_gravity) return 'no';
+    if (gravityG < ruleset.min_gravity) { 
+      console.log(`Gravity is lower than minimum gravity in ruleset for ${species_name}`); 
+      return 'no'; 
+    }
   }
   if (ruleset.max_gravity !== undefined && gravityG !== null) {
-    if (gravityG >= ruleset.max_gravity) return 'no';
+    if (gravityG >= ruleset.max_gravity) { 
+      console.log(`Gravity is higher than maximum gravity in ruleset for ${species_name}`); 
+      return 'no'; 
+    }
   }
 
   // Temperature
   if (ruleset.min_temperature !== undefined && body.surface_temp !== null && body.surface_temp !== undefined) {
-    if (body.surface_temp < ruleset.min_temperature) return 'no';
+    if (body.surface_temp < ruleset.min_temperature) {
+      console.log(`Temperature is lower than minimum temperature in ruleset for ${species_name}`); 
+      return 'no';
+    }
   }
   if (ruleset.max_temperature !== undefined && body.surface_temp !== null && body.surface_temp !== undefined) {
-    if (body.surface_temp > ruleset.max_temperature) return 'no';
+    if (body.surface_temp > ruleset.max_temperature) {
+      console.log(`Temperature is higher than maximum temperature in ruleset for ${species_name}`);
+      return 'no';
+    }
   }
 
   // Pressure — journal SurfacePressure is in Pa; rulesets use atm
@@ -1765,31 +1785,65 @@ function checkRuleset(
     ? body.pressure / ATM_PRESSURE
     : null;
   if (ruleset.min_pressure !== undefined && pressureAtm !== null) {
-    if (pressureAtm < ruleset.min_pressure) return 'no';
+    if (pressureAtm < ruleset.min_pressure) {
+      console.log(`Pressure is lower than minimum pressure in ruleset for ${species_name}`);
+      return 'no';
+    }
   }
   if (ruleset.max_pressure !== undefined && pressureAtm !== null) {
-    if (pressureAtm >= ruleset.max_pressure) return 'no';
+    if (pressureAtm >= ruleset.max_pressure) {
+      console.log(`Pressure is higher than maximum pressure in ruleset for ${species_name}`);
+      return 'no';
+    }
   }
 
   // Volcanism
-  if (!matchesVolcanism(body.volcanism, ruleset.volcanism)) return 'no';
+  if (!matchesVolcanism(body.volcanism, ruleset.volcanism)) { 
+    console.log(`Star class does not match ruleset for ${species_name}`); 
+    return 'no'; 
+  }
 
   // Star type (uses system primary star class as approximation)
   const starClass = body.star_class ?? null;
   if (ruleset.star !== undefined) {
-    if (!matchesStar(starClass, ruleset.star)) return 'no';
+    if (!matchesStar(starClass, ruleset.star)) {
+      console.log(`Star class does not match ruleset for ${species_name}`);
+      return 'no';
+    }
   }
   if (ruleset.parent_star !== undefined) {
-    if (!matchesStar(starClass, ruleset.parent_star)) return 'no';
+    if (!matchesStar(starClass, ruleset.parent_star)) {
+      console.log(`Parent star class does not match ruleset for ${species_name}`);
+      return 'no';
+    }
   }
 
-  // Physical conditions passed — check uncertainty flags
-  const hasRegionRequirement = (
-    (ruleset.regions !== undefined && ruleset.regions.length > 0) ||
-    (ruleset.region !== undefined && ruleset.region.length > 0)
-  );
+  // Region check
+
+  // get regions from ruleset
+  const regionList = ruleset.regions ?? ruleset.region ?? [];
+  
+  if (regionList.length > 0) {
+    
+    // if any of the star_systems coordinates are unavailable, we can't determine the region
+    if (body.x == null || body.y == null || body.z == null) return 'uncertain';
+    
+    // get the region based on the star's coordinates
+    const regionId = findRegion(body.x, body.y, body.z);
+    console.log(`System is in region ${regionName(regionId)}`)
+
+    // if region couldn't be found we still know nothing
+    if (regionId === null) return 'uncertain';
+    
+    const isInRegion = (r: string) => systemInRegion(regionId, r);
+    if (!regionList.some(isInRegion)) {
+      console.log(`Region does not match ruleset for ${species_name}`);
+      return 'no';
+    }
+  }
+
+  // Physical conditions and region passed — check remaining uncertainty flags
   const isUncertain = (
-    hasRegionRequirement ||
     ruleset.guardian === true ||
     ruleset.nebula !== undefined ||
     ruleset.tuber !== undefined ||
@@ -1805,15 +1859,15 @@ function checkRuleset(
  * The result is marked uncertain if the best match across rulesets is 'uncertain'.
  */
 export function getPossibleSpecies(body: SystemBody): BioMatch[] {
-  // Only planets can have biologicals
-  if (body.body_type !== 'Planet') return [];
+  // Only landable planets can have biologicals
+  if (body.body_type !== 'Planet' && !body.landable) return [];
 
   const results: BioMatch[] = [];
 
   for (const species of SPECIES) {
     let bestResult: 'no' | 'uncertain' | 'yes' = 'no';
     for (const ruleset of species.rulesets) {
-      const r = checkRuleset(ruleset, body);
+      const r = checkRuleset(ruleset, species.name, body);
       if (r === 'yes') { bestResult = 'yes'; break; }
       if (r === 'uncertain') bestResult = 'uncertain';
     }

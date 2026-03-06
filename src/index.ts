@@ -159,7 +159,8 @@ function readFileHeader(filePath: string, win: BrowserWindow): void {
         typeof parsed.SystemAddress === 'number' &&
         typeof parsed.StarSystem    === 'string'
       ) {
-        upsertSystemFromLocation(parsed.SystemAddress, parsed.StarSystem);
+        const [lx, ly, lz] = Array.isArray(parsed.StarPos) ? parsed.StarPos as number[] : [null, null, null];
+        upsertSystemFromLocation(parsed.SystemAddress, parsed.StarSystem, lx, ly, lz);
         if (cmdrFid) {
           updateCommanderSystem(cmdrFid, parsed.SystemAddress);
           if (activeCommander) {
@@ -242,7 +243,8 @@ function readNewLines(win: BrowserWindow): void {
         if (event.type === 'Location' &&
             typeof event.data.SystemAddress === 'number' &&
             typeof event.data.StarSystem    === 'string') {
-          upsertSystemFromLocation(event.data.SystemAddress, event.data.StarSystem);
+          const [ex, ey, ez] = Array.isArray(event.data.StarPos) ? event.data.StarPos as number[] : [null, null, null];
+          upsertSystemFromLocation(event.data.SystemAddress, event.data.StarSystem, ex, ey, ez);
           if (activeCommander) {
             updateCommanderSystem(activeCommander.fid, event.data.SystemAddress);
             activeCommander.currentSystem     = event.data.SystemAddress;

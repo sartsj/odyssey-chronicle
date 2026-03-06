@@ -24,6 +24,13 @@ export function initDatabase(): void {
   try { db.exec('ALTER TABLE bodies ADD COLUMN star_type TEXT'); } catch { /* already exists */ }
   // Migration: add biological signals column
   try { db.exec('ALTER TABLE bodies ADD COLUMN biological_signals INTEGER'); } catch { /* already exists */ }
+  // Migration: add star position columns
+  try { db.exec('ALTER TABLE star_systems ADD COLUMN x REAL'); } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE star_systems ADD COLUMN y REAL'); } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE star_systems ADD COLUMN z REAL'); } catch { /* already exists */ }
+
+  // Migration: add atmosphere_composition column
+  try { db.exec('ALTER TABLE bodies ADD COLUMN atmosphere_composition TEXT'); } catch { /* already exists */ }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS events (
@@ -42,6 +49,9 @@ export function initDatabase(): void {
       non_body_count        INTEGER,
       all_bodies_found      INTEGER NOT NULL,
       estimated_scan_value  INTEGER NOT NULL DEFAULT 0,
+      x                     REAL,
+      y                     REAL,
+      z                     REAL,
       UNIQUE(system_address, system_name)
     );
 
@@ -67,14 +77,15 @@ export function initDatabase(): void {
       surface_temp    REAL,
       luminosity      TEXT,
 
-      planet_class    TEXT,
-      atmosphere      TEXT,
-      atmosphere_type TEXT,
-      volcanism       TEXT,
-      gravity         REAL,
-      pressure        REAL,
-      landable        INTEGER,
-      terraform_state   TEXT,
+      planet_class            TEXT,
+      atmosphere              TEXT,
+      atmosphere_type         TEXT,
+      atmosphere_composition  TEXT,
+      volcanism               TEXT,
+      gravity                 REAL,
+      pressure                REAL,
+      landable                INTEGER,
+      terraform_state         TEXT,
 
       parent_body_id    INTEGER,
       parent_body_type  TEXT,
@@ -460,18 +471,23 @@ export function insertEvent(event: GameEvent, commanderFid: string | null = null
 
   // Populate star_systems and log visit from FSDJump events
   if (event.type === 'FSDJump') {
-    const { SystemAddress, StarSystem, StarClass } = event.data;
+    const { SystemAddress, StarSystem, StarClass, StarPos } = event.data;
     if (
       typeof SystemAddress === 'number' &&
       typeof StarSystem    === 'string' &&
       typeof StarClass     === 'string'
     ) {
+      const [x, y, z] = Array.isArray(StarPos) ? StarPos as number[] : [null, null, null];
       db.prepare(
         `INSERT INTO star_systems
-           (system_address, system_name, star_class, all_bodies_found)
-         VALUES (?, ?, ?, 0)
-         ON CONFLICT(system_address) DO UPDATE SET star_class = excluded.star_class`
-      ).run(SystemAddress, StarSystem, StarClass);
+           (system_address, system_name, star_class, all_bodies_found, x, y, z)
+         VALUES (?, ?, ?, 0, ?, ?, ?)
+         ON CONFLICT(system_address) DO UPDATE SET
+           star_class = excluded.star_class,
+           x = COALESCE(excluded.x, star_systems.x),
+           y = COALESCE(excluded.y, star_systems.y),
+           z = COALESCE(excluded.z, star_systems.z)`
+      ).run(SystemAddress, StarSystem, StarClass, x ?? null, y ?? null, z ?? null);
       db.prepare(
         'INSERT OR IGNORE INTO systems_visited (system_address, visited_at) VALUES (?, ?)'
       ).run(SystemAddress, timestamp);
@@ -534,12 +550,22 @@ export function getLastCommander(): { fid: string; name: string; current_system:
 
 // Inserts a system from a Location event (no StarClass available — uses INSERT OR IGNORE
 // so existing rows with a proper star_class are never overwritten).
-export function upsertSystemFromLocation(systemAddress: number, systemName: string): void {
+export function upsertSystemFromLocation(
+  systemAddress: number,
+  systemName: string,
+  x?: number | null,
+  y?: number | null,
+  z?: number | null,
+): void {
   db.prepare(
-    `INSERT OR IGNORE INTO star_systems
-       (system_address, system_name, star_class, all_bodies_found)
-     VALUES (?, ?, '', 0)`
-  ).run(systemAddress, systemName);
+    `INSERT INTO star_systems
+       (system_address, system_name, star_class, all_bodies_found, x, y, z)
+     VALUES (?, ?, '', 0, ?, ?, ?)
+     ON CONFLICT(system_address) DO UPDATE SET
+       x = COALESCE(excluded.x, star_systems.x),
+       y = COALESCE(excluded.y, star_systems.y),
+       z = COALESCE(excluded.z, star_systems.z)`
+  ).run(systemAddress, systemName, x ?? null, y ?? null, z ?? null);
 }
 
 export function updateCommanderSystem(fid: string, systemAddress: number): void {
@@ -569,20 +595,24 @@ export interface SystemBody {
   mapped_by: string | null;
   footfall_by: string | null;
   biological_signals: number | null;
+  atmosphere: string | null;
   atmosphere_type: string | null;
   surface_temp: number | null;
   gravity: number | null;
   pressure: number | null;
   volcanism: string | null;
   star_class: string | null;
+  x: number | null;
+  y: number | null;
+  z: number | null;
 }
 
 export function getBodiesBySystem(systemAddress: number): SystemBody[] {
   return db.prepare(
     `SELECT b.body_name, b.body_type, b.planet_class, b.landable, b.terraform_state, b.distance,
             b.discovered_by, b.mapped_by, b.footfall_by, b.biological_signals,
-            b.atmosphere_type, b.surface_temp, b.gravity, b.pressure, b.volcanism,
-            ss.star_class
+            b.atmosphere, b.atmosphere_type, b.surface_temp, b.gravity, b.pressure, b.volcanism,
+            ss.star_class, ss.x, ss.y, ss.z
      FROM bodies b
      LEFT JOIN star_systems ss ON ss.system_address = b.system_address
      WHERE b.system_address = ? AND b.body_type NOT IN ('Barycenter', 'Unknown')
