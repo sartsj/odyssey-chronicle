@@ -1797,8 +1797,22 @@ function checkRuleset(
     }
   }
 
+  // Atmosphere component
+  if (ruleset.atmosphere_component !== undefined) {
+    if (!body.atmosphere_composition) return 'no';
+    for (const [name, minPercent] of Object.entries(ruleset.atmosphere_component)) {
+      const entry = body.atmosphere_composition.find(
+        (c) => c.Name.toLowerCase() === name.toLowerCase()
+      );
+      if (!entry || entry.Percent < minPercent) {
+        console.log(`Atmosphere component ${name} does not meet requirement for ${species_name}`);
+        return 'no';
+      }
+    }
+  }
+
   // Volcanism
-  if (!matchesVolcanism(body.volcanism, ruleset.volcanism)) { 
+  if (!matchesVolcanism(body.volcanism, ruleset.volcanism)) {
     console.log(`Star class does not match ruleset for ${species_name}`); 
     return 'no'; 
   }
@@ -1846,8 +1860,7 @@ function checkRuleset(
   const isUncertain = (
     ruleset.guardian === true ||
     ruleset.nebula !== undefined ||
-    ruleset.tuber !== undefined ||
-    ruleset.atmosphere_component !== undefined
+    ruleset.tuber !== undefined
   );
 
   return isUncertain ? 'uncertain' : 'yes';

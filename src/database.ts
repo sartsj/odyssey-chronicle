@@ -284,10 +284,10 @@ function estimateBodyScanValue(k: number, mass: number, isFirstDiscoverer: boole
 }
 
 function processBodyScan(d: Record<string, unknown>): void {
-  const systemAddress = typeof d.SystemAddress === 'number' ? d.SystemAddress : null;
-  const bodyId        = typeof d.BodyID         === 'number' ? d.BodyID         : null;
-  const bodyName      = typeof d.BodyName       === 'string' ? d.BodyName       : null;
-  const distance      = typeof d.DistanceFromArrivalLS === 'number' ? d.DistanceFromArrivalLS : null;
+  const systemAddress = typeof d.SystemAddress          === 'number' ? d.SystemAddress          : null;
+  const bodyId        = typeof d.BodyID                 === 'number' ? d.BodyID                 : null;
+  const bodyName      = typeof d.BodyName               === 'string' ? d.BodyName               : null;
+  const distance      = typeof d.DistanceFromArrivalLS  === 'number' ? d.DistanceFromArrivalLS  : null;
 
   const wasDiscovered = d.wasDiscovered === true;
   const wasMapped     = d.wasMapped     === true;
@@ -328,53 +328,55 @@ function processBodyScan(d: Record<string, unknown>): void {
     INSERT INTO bodies (
       system_address, body_id, body_name, body_type, distance,
       sub_class, star_type, mass, radius, age, surface_temp, luminosity,
-      planet_class, atmosphere, atmosphere_type, volcanism, gravity, pressure, landable,
+      planet_class, atmosphere, atmosphere_type, atmosphere_composition, volcanism, gravity, pressure, landable,
       terraform_state, parent_body_id, parent_body_type, scan_value
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(body_name) DO UPDATE SET
-      body_type        = excluded.body_type,
-      distance         = excluded.distance,
-      sub_class        = excluded.sub_class,
-      star_type        = excluded.star_type,
-      mass             = excluded.mass,
-      radius           = excluded.radius,
-      age              = excluded.age,
-      surface_temp     = excluded.surface_temp,
-      luminosity       = excluded.luminosity,
-      planet_class     = excluded.planet_class,
-      atmosphere       = excluded.atmosphere,
-      atmosphere_type  = excluded.atmosphere_type,
-      volcanism        = excluded.volcanism,
-      gravity          = excluded.gravity,
-      pressure         = excluded.pressure,
-      landable         = excluded.landable,
-      terraform_state  = excluded.terraform_state,
-      parent_body_id   = excluded.parent_body_id,
-      parent_body_type = excluded.parent_body_type,
-      scan_value       = excluded.scan_value
+      body_type               = excluded.body_type,
+      distance                = excluded.distance,
+      sub_class               = excluded.sub_class,
+      star_type               = excluded.star_type,
+      mass                    = excluded.mass,
+      radius                  = excluded.radius,
+      age                     = excluded.age,
+      surface_temp            = excluded.surface_temp,
+      luminosity              = excluded.luminosity,
+      planet_class            = excluded.planet_class,
+      atmosphere              = excluded.atmosphere,
+      atmosphere_type         = excluded.atmosphere_type,
+      atmosphere_composition  = excluded.atmosphere_composition,
+      volcanism               = excluded.volcanism,
+      gravity                 = excluded.gravity,
+      pressure                = excluded.pressure,
+      landable                = excluded.landable,
+      terraform_state         = excluded.terraform_state,
+      parent_body_id          = excluded.parent_body_id,
+      parent_body_type        = excluded.parent_body_type,
+      scan_value              = excluded.scan_value
   `).run(
     systemAddress,
     bodyId,
     bodyName,
     bodyType,
     distance,
-    typeof d.Subclass           === 'number'  ? d.Subclass          : null,
-    typeof d.StarType           === 'string'  ? d.StarType          : null,
+    typeof d.Subclass               === 'number'  ? d.Subclass              : null,
+    typeof d.StarType               === 'string'  ? d.StarType              : null,
     isStar
-      ? (typeof d.StellarMass   === 'number'  ? d.StellarMass       : null)
-      : (typeof d.MassEM        === 'number'  ? d.MassEM            : null),
-    typeof d.Radius             === 'number'  ? d.Radius            : null,
-    typeof d.Age_MY             === 'number'  ? d.Age_MY            : null,
-    typeof d.SurfaceTemperature === 'number'  ? d.SurfaceTemperature : null,
-    typeof d.Luminosity         === 'string'  ? d.Luminosity        : null,
-    typeof d.PlanetClass        === 'string'  ? d.PlanetClass       : null,
-    typeof d.Atmosphere         === 'string'  ? d.Atmosphere        : null,
-    typeof d.AtmosphereType     === 'string'  ? d.AtmosphereType    : null,
-    typeof d.Volcanism          === 'string'  ? d.Volcanism         : null,
-    typeof d.SurfaceGravity     === 'number'  ? d.SurfaceGravity    : null,
-    typeof d.SurfacePressure    === 'number'  ? d.SurfacePressure   : null,
-    typeof d.Landable           === 'boolean' ? (d.Landable ? 1 : 0) : null,
-    typeof d.TerraformState     === 'string'  ? d.TerraformState   : null,
+      ? (typeof d.StellarMass       === 'number'  ? d.StellarMass           : null)
+      : (typeof d.MassEM            === 'number'  ? d.MassEM                : null),
+    typeof d.Radius                 === 'number'  ? d.Radius                : null,
+    typeof d.Age_MY                 === 'number'  ? d.Age_MY                : null,
+    typeof d.SurfaceTemperature     === 'number'  ? d.SurfaceTemperature    : null,
+    typeof d.Luminosity             === 'string'  ? d.Luminosity            : null,
+    typeof d.PlanetClass            === 'string'  ? d.PlanetClass           : null,
+    typeof d.Atmosphere             === 'string'  ? d.Atmosphere            : null,
+    typeof d.AtmosphereType         === 'string'  ? d.AtmosphereType        : null,
+    Array.isArray(d.AtmosphereComposition)        ? JSON.stringify(d.AtmosphereComposition) : null,
+    typeof d.Volcanism              === 'string'  ? d.Volcanism             : null,
+    typeof d.SurfaceGravity         === 'number'  ? d.SurfaceGravity        : null,
+    typeof d.SurfacePressure        === 'number'  ? d.SurfacePressure       : null,
+    typeof d.Landable               === 'boolean' ? (d.Landable ? 1 : 0)    : null,
+    typeof d.TerraformState         === 'string'  ? d.TerraformState        : null,
     parentBodyId,
     parentBodyType,
     scanValue,
@@ -597,6 +599,7 @@ export interface SystemBody {
   biological_signals: number | null;
   atmosphere: string | null;
   atmosphere_type: string | null;
+  atmosphere_composition: { Name: string; Percent: number }[] | null;
   surface_temp: number | null;
   gravity: number | null;
   pressure: number | null;
@@ -608,16 +611,20 @@ export interface SystemBody {
 }
 
 export function getBodiesBySystem(systemAddress: number): SystemBody[] {
-  return db.prepare(
+  const rows = db.prepare(
     `SELECT b.body_name, b.body_type, b.planet_class, b.landable, b.terraform_state, b.distance,
             b.discovered_by, b.mapped_by, b.footfall_by, b.biological_signals,
-            b.atmosphere, b.atmosphere_type, b.surface_temp, b.gravity, b.pressure, b.volcanism,
+            b.atmosphere, b.atmosphere_type, b.atmosphere_composition, b.surface_temp, b.gravity, b.pressure, b.volcanism,
             ss.star_class, ss.x, ss.y, ss.z
      FROM bodies b
      LEFT JOIN star_systems ss ON ss.system_address = b.system_address
      WHERE b.system_address = ? AND b.body_type NOT IN ('Barycenter', 'Unknown')
      ORDER BY b.body_id ASC`
-  ).all(systemAddress) as SystemBody[];
+  ).all(systemAddress) as any[];
+  return rows.map(row => ({
+    ...row,
+    atmosphere_composition: row.atmosphere_composition ? JSON.parse(row.atmosphere_composition) : null,
+  }));
 }
 
 export interface SystemVisit {
