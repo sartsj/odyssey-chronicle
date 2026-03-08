@@ -202,6 +202,7 @@ body {
 }
 
 .body--planet { border-left-color: #6366f1; }
+.body--planet--terraformable { border-left-color: #008066; }
 .body--star   { border-left-color: #d45500; }
 
 .body__name {
@@ -263,7 +264,6 @@ body {
   width: 18px;
   height: 18px;
 }
-.body__badge--terraformstate { color: #4ade80; }
 
 .body__col-empty { display: block; }
 
@@ -272,9 +272,9 @@ body {
 }
 
 .body__bio-count {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #4ade80;
+  color: #008066;
   font-family: monospace;
 }
 
@@ -402,8 +402,13 @@ body {
   gap: 0.6rem;
   padding: 0.4rem 0.6rem;
   border-radius: 4px;
-  border-left: 3px solid #fba706;
+  border-left: 3px solid #d45500;
   background: #13151e;
+  cursor: pointer;
+}
+
+.visit:hover {
+  background: #1e2235;
 }
 
 .visit__name {
@@ -420,6 +425,20 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.history-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #2d3148;
+}
+
+#history-detail-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #d45500;
 }
 
 /* Event list */

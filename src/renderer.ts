@@ -129,6 +129,7 @@ function createBodyElement(body: SystemBody, cmdrName: string): HTMLLIElement {
 
   const terraform_state = document.createElement('span');
   if (body.terraform_state && body.terraform_state.toLowerCase() == "terraformable") {
+    li.className += ' body--planet--terraformable'
     terraform_state.className = 'body__icon';
     const img = document.createElement('img');
     img.src = terraformableIcon;
@@ -263,7 +264,7 @@ function createBodyElement(body: SystemBody, cmdrName: string): HTMLLIElement {
   return li;
 }
 
-function createHistoryElement(visit: SystemVisit): HTMLLIElement {
+function createHistoryElement(visit: SystemVisit, onClick: () => void): HTMLLIElement {
   const li = document.createElement('li');
   li.className = 'visit';
 
@@ -275,6 +276,7 @@ function createHistoryElement(visit: SystemVisit): HTMLLIElement {
   time.className = 'visit__time';
   time.textContent = new Date(visit.visited_at).toLocaleString();
 
+  li.addEventListener('click', onClick);
   li.append(time, name);
   return li;
 }
@@ -302,6 +304,23 @@ function updateCount(): void {
   if (counter && list) counter.textContent = `${list.childElementCount} events`;
 }
 
+async function populateBodies(
+  targetList: HTMLUListElement,
+  systemAddress: number | null,
+  cmdrName: string
+): Promise<void> {
+  targetList.innerHTML = '';
+  if (systemAddress === null) return;
+  const bodies = await window.chronicle.getBodies(systemAddress);
+  for (const entry of buildBodyEntries(bodies)) {
+    targetList.append(
+      entry.kind === 'group'
+        ? createBodyGroup(entry.key, entry.members, cmdrName)
+        : createBodyElement(entry.body, cmdrName)
+    );
+  }
+}
+
 function initTabs(): void {
   const tabs = document.querySelectorAll<HTMLButtonElement>('.tab');
   tabs.forEach((tab) => {
@@ -322,37 +341,44 @@ async function init(): Promise<void> {
   const watchBtn   = document.getElementById('btn-watch')   as HTMLButtonElement;
   const stopBtn    = document.getElementById('btn-stop')    as HTMLButtonElement;
   const clearBtn   = document.getElementById('btn-clear')   as HTMLButtonElement;
-  const list        = document.getElementById('event-list')   as HTMLUListElement;
-  const bodyList    = document.getElementById('body-list')    as HTMLUListElement;
-  const historyList = document.getElementById('history-list') as HTMLUListElement;
+  const list             = document.getElementById('event-list')          as HTMLUListElement;
+  const bodyList         = document.getElementById('body-list')           as HTMLUListElement;
+  const historyList      = document.getElementById('history-list')        as HTMLUListElement;
+  const historyViewList  = document.getElementById('history-view-list')   as HTMLDivElement;
+  const historyViewDetail = document.getElementById('history-view-detail') as HTMLDivElement;
+  const historyBackBtn   = document.getElementById('history-back-btn')    as HTMLButtonElement;
+  const historyDetailTitle = document.getElementById('history-detail-title') as HTMLSpanElement;
+  const historyBodyList  = document.getElementById('history-body-list')   as HTMLUListElement;
 
   initTabs();
 
   let cleanupListener: (() => void) | null = null;
 
-  async function refreshBodyList(systemAddress: number | null, cmdrName: string): Promise<void> {
-    bodyList.innerHTML = '';
-    if (systemAddress === null) return;
-    const bodies = await window.chronicle.getBodies(systemAddress);
-    for (const entry of buildBodyEntries(bodies)) {
-      bodyList.append(
-        entry.kind === 'group'
-          ? createBodyGroup(entry.key, entry.members, cmdrName)
-          : createBodyElement(entry.body, cmdrName)
-      );
-    }
+  const cmdr = await window.chronicle.getCommander();
+
+  function showHistoryDetail(visit: SystemVisit): void {
+    historyDetailTitle.textContent = visit.system_name ?? `#${visit.system_address}`;
+    historyViewList.hidden = true;
+    historyViewDetail.hidden = false;
+    void populateBodies(historyBodyList, visit.system_address, cmdr?.name ?? '');
   }
+
+  function showHistoryList(): void {
+    historyViewDetail.hidden = true;
+    historyBodyList.innerHTML = '';
+    historyViewList.hidden = false;
+  }
+
+  historyBackBtn.addEventListener('click', showHistoryList);
 
   async function refreshHistoryList(): Promise<void> {
     historyList.innerHTML = '';
     const visits = await window.chronicle.getHistory();
-    for (const visit of visits) historyList.append(createHistoryElement(visit));
+    for (const visit of visits) historyList.append(createHistoryElement(visit, () => showHistoryDetail(visit)));
   }
 
-  const cmdr = await window.chronicle.getCommander();
-
   window.chronicle.onBodiesUpdated((systemAddress) => {
-    refreshBodyList(systemAddress, cmdr.name);
+    void populateBodies(bodyList, systemAddress, cmdr.name);
   });
 
   window.chronicle.onHistoryUpdated(() => {
@@ -413,13 +439,13 @@ async function init(): Promise<void> {
   // (auto-start is handled by the main process via 'file:watching')
   setCommander(cmdr);
   await Promise.all([
-    refreshBodyList(cmdr?.currentSystem ?? null, cmdr.name),
+    populateBodies(bodyList, cmdr?.currentSystem ?? null, cmdr.name),
     refreshHistoryList(),
   ]);
 
   window.chronicle.onCommanderActive((cmdr) => {
     setCommander(cmdr);
-    refreshBodyList(cmdr.currentSystem ?? null, cmdr.name);
+    void populateBodies(bodyList, cmdr.currentSystem ?? null, cmdr.name);
   });
 
   const savedFolder = await window.chronicle.getFolder();
