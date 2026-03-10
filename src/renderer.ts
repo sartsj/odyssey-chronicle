@@ -276,8 +276,27 @@ function createHistoryElement(visit: SystemVisit, onClick: () => void): HTMLLIEl
   time.className = 'visit__time';
   time.textContent = new Date(visit.visited_at).toLocaleString();
 
+  const badges = document.createElement('span');
+  badges.className = 'visit__badges';
+
+  const notableBodies: { count: number; label: string; cls: string }[] = [
+    { count: visit.earthlike_worlds,     label: 'ELW', cls: 'elw' },
+    { count: visit.water_worlds,          label: 'WW',  cls: 'ww'  },
+    { count: visit.ammonia_worlds,        label: 'AW',  cls: 'aw'  },
+    { count: visit.terraformable_planets, label: 'TF',  cls: 'tf'  },
+  ];
+  for (const { count, label, cls } of notableBodies) {
+    if (count > 0) {
+      const badge = document.createElement('span');
+      badge.className = `visit__body-badge visit__body-badge--${cls}`;
+      badge.textContent = count > 1 ? `${count} ${label}` : label;
+      badge.title = `${count} ${label}`;
+      badges.appendChild(badge);
+    }
+  }
+
   li.addEventListener('click', onClick);
-  li.append(time, name);
+  li.append(time, name, badges);
   return li;
 }
 

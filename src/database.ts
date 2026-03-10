@@ -31,6 +31,11 @@ export function initDatabase(): void {
 
   // Migration: add atmosphere_composition column
   try { db.exec('ALTER TABLE bodies ADD COLUMN atmosphere_composition TEXT'); } catch { /* already exists */ }
+  // Migration: add notable body type counts to star_systems
+  try { db.exec('ALTER TABLE star_systems ADD COLUMN ammonia_worlds        INTEGER NOT NULL DEFAULT 0'); } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE star_systems ADD COLUMN earthlike_worlds     INTEGER NOT NULL DEFAULT 0'); } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE star_systems ADD COLUMN water_worlds          INTEGER NOT NULL DEFAULT 0'); } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE star_systems ADD COLUMN terraformable_planets INTEGER NOT NULL DEFAULT 0'); } catch { /* already exists */ }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS events (
@@ -52,6 +57,10 @@ export function initDatabase(): void {
       x                     REAL,
       y                     REAL,
       z                     REAL,
+      ammonia_worlds        INTEGER NOT NULL DEFAULT 0,
+      earthlike_worlds     INTEGER NOT NULL DEFAULT 0,
+      water_worlds          INTEGER NOT NULL DEFAULT 0,
+      terraformable_planets INTEGER NOT NULL DEFAULT 0,
       UNIQUE(system_address, system_name)
     );
 
@@ -392,6 +401,16 @@ function processBodyScan(d: Record<string, unknown>): void {
     WHERE system_address = ?
   `).run(systemAddress, systemAddress);
 
+  db.prepare(`
+    UPDATE star_systems
+    SET
+      ammonia_worlds        = (SELECT COUNT(*) FROM bodies WHERE system_address = ? AND LOWER(planet_class) = 'ammonia world'),
+      earthlike_worlds     = (SELECT COUNT(*) FROM bodies WHERE system_address = ? AND LOWER(planet_class) = 'earthlike body'),
+      water_worlds          = (SELECT COUNT(*) FROM bodies WHERE system_address = ? AND LOWER(planet_class) = 'water world'),
+      terraformable_planets = (SELECT COUNT(*) FROM bodies WHERE system_address = ? AND terraform_state = 'Terraformable')
+    WHERE system_address = ?
+  `).run(systemAddress, systemAddress, systemAddress, systemAddress, systemAddress);
+
   // Insert barycenter when first seen as a Null parent — barycenters are never
   // directly scanned so this is the only opportunity to record them.
   if (parentBodyType === 'Null' && parentBodyId !== null) {
@@ -631,11 +650,19 @@ export interface SystemVisit {
   system_address: number;
   system_name: string | null;
   visited_at: string;
+  ammonia_worlds: number;
+  earthlike_worlds: number;
+  water_worlds: number;
+  terraformable_planets: number;
 }
 
 export function getSystemsVisited(): SystemVisit[] {
   return db.prepare(`
-    SELECT sv.system_address, ss.system_name, sv.visited_at
+    SELECT sv.system_address, ss.system_name, sv.visited_at,
+           COALESCE(ss.ammonia_worlds,        0) AS ammonia_worlds,
+           COALESCE(ss.earthlike_worlds,     0) AS earthlike_worlds,
+           COALESCE(ss.water_worlds,          0) AS water_worlds,
+           COALESCE(ss.terraformable_planets, 0) AS terraformable_planets
     FROM systems_visited sv
     LEFT JOIN star_systems ss ON ss.system_address = sv.system_address
     ORDER BY sv.id DESC

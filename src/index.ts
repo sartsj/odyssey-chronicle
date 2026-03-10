@@ -82,10 +82,14 @@ const JOURNAL_FILENAME = /^Journal\.\d{4}-\d{2}-\d{2}T\d{6}\.\d+\.log$/;
 
 // Returns the newest file in the folder that does not end with a Shutdown event.
 function findLatestFile(folder: string): string | null {
+  // console.log(`[findLatestFile] starting in folder ${folder}`)
+  
   let entries: fs.Dirent[];
   try {
     entries = fs.readdirSync(folder, { withFileTypes: true });
+    // console.log('[findLatestFile] files found:', entries.map(e => e.name));
   } catch {
+    // console.log(`[findLatestFile] Unable to list files in folder ${folder}`)
     return null;
   }
 
@@ -101,8 +105,12 @@ function findLatestFile(folder: string): string | null {
     })
     .sort((a, b) => b.mtime - a.mtime); // newest first
 
+  console.log('[findLatestFile] candidates:', files.map(f => `${path.basename(f.path)} mtime=${new Date(f.mtime).toISOString()}`));
+
   for (const file of files) {
-    if (!hasShutdownAtEnd(file.path)) return file.path;
+    const hasShutdown = hasShutdownAtEnd(file.path);
+    console.log(`[findLatestFile] ${path.basename(file.path)} hasShutdown=${hasShutdown}`);
+    if (!hasShutdown) return file.path;
   }
   return null;
 }

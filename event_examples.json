@@ -745,3 +745,140 @@
     "OnStation": false,
     "OnPlanet": true
 }
+
+{
+    "timestamp": "2026-03-09T23:02:23Z",
+    "event": "Scan",
+    "ScanType": "Detailed",
+    "BodyName": "Syraluia VL-C c29-1 4 a",
+    "BodyID": 15,
+    "Parents": [
+        {
+            "Planet": 14
+        },
+        {
+            "Star": 0
+        }
+    ],
+    "StarSystem": "Syraluia VL-C c29-1",
+    "SystemAddress": 371750443002,
+    "DistanceFromArrivalLS": 543.175082,
+    "TidalLock": true,
+    "TerraformState": "",
+    "PlanetClass": "Rocky body",
+    "Atmosphere": "thin carbon dioxide atmosphere",
+    "AtmosphereType": "CarbonDioxide",
+    "AtmosphereComposition": [
+        {
+            "Name": "CarbonDioxide",
+            "Percent": 99.009911
+        },
+        {
+            "Name": "SulphurDioxide",
+            "Percent": 0.990099
+        }
+    ],
+    "Volcanism": "",
+    "MassEM": 0.016737,
+    "Radius": 1756329.125000,
+    "SurfaceGravity": 2.162533,
+    "SurfaceTemperature": 179.921432,
+    "SurfacePressure": 8658.591797,
+    "Landable": true,
+    "Materials": [
+        {
+            "Name": "iron",
+            "Percent": 21.276348
+        },
+        {
+            "Name": "sulphur",
+            "Percent": 18.847004
+        },
+        {
+            "Name": "nickel",
+            "Percent": 16.092539
+        },
+        {
+            "Name": "carbon",
+            "Percent": 15.848379
+        },
+        {
+            "Name": "phosphorus",
+            "Percent": 10.146404
+        },
+        {
+            "Name": "zinc",
+            "Percent": 5.782115
+        },
+        {
+            "Name": "germanium",
+            "Percent": 5.607194
+        },
+        {
+            "Name": "zirconium",
+            "Percent": 2.470623
+        },
+        {
+            "Name": "tellurium",
+            "Percent": 1.452275
+        },
+        {
+            "Name": "tin",
+            "Percent": 1.308839
+        },
+        {
+            "Name": "tungsten",
+            "Percent": 1.168285
+        }
+    ],
+    "Composition": {
+        "Ice": 0.000000,
+        "Rock": 0.858728,
+        "Metal": 0.141272
+    },
+    "SemiMajorAxis": 250438094.139099,
+    "Eccentricity": 0.000000,
+    "OrbitalInclination": -21.109854,
+    "Periapsis": 66.060562,
+    "OrbitalPeriod": 1423956.274986,
+    "AscendingNode": 91.406198,
+    "MeanAnomaly": 24.556653,
+    "RotationPeriod": 1439745.593996,
+    "AxialTilt": 0.291264,
+    "WasDiscovered": false,
+    "WasMapped": false,
+    "WasFootfalled": false
+}
+
+{
+    "timestamp": "2026-03-09T23:02:22Z",
+    "event": "SAASignalsFound",
+    "BodyName": "Syraluia VL-C c29-1 4 a",
+    "SystemAddress": 371750443002,
+    "BodyID": 15,
+    "Signals": [
+        {
+            "Type": "$SAA_SignalType_Biological;",
+            "Type_Localised": "Biological",
+            "Count": 4
+        }
+    ],
+    "Genuses": [
+        {
+            "Genus": "$Codex_Ent_Aleoids_Genus_Name;",
+            "Genus_Localised": "Aleoida"
+        },
+        {
+            "Genus": "$Codex_Ent_Bacterial_Genus_Name;",
+            "Genus_Localised": "Bacterium"
+        },
+        {
+            "Genus": "$Codex_Ent_Stratum_Genus_Name;",
+            "Genus_Localised": "Stratum"
+        },
+        {
+            "Genus": "$Codex_Ent_Tussocks_Genus_Name;",
+            "Genus_Localised": "Tussock"
+        }
+    ]
+}
