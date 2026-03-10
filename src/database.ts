@@ -113,6 +113,17 @@ export function initDatabase(): void {
       visited_at     TEXT    NOT NULL,
       UNIQUE(visited_at)
     );
+
+    CREATE TABLE IF NOT EXISTS biologicals_found (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      system_address  INTEGER NOT NULL,
+      body_id         INTEGER NOT NULL,
+      genus           TEXT NOT NULL,
+      species         TEXT,
+      variant         TEXT,
+      status          TEXT,
+      scan_value      INTEGER NOT NULL DEFAULT 0,
+    );
   `);
 
   // Backfill systems_visited from any FSDJump events already in the events table.
