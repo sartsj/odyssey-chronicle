@@ -31,7 +31,16 @@ function createEventElement(event: GameEvent): HTMLLIElement {
   raw.className = 'event__raw';
   raw.textContent = event.raw;
 
-  li.append(badge, raw);
+  const details = document.createElement('pre');
+  details.className = 'event__details';
+  details.textContent = JSON.stringify(event.data, null, 2);
+
+  li.append(badge, raw, details);
+
+  li.addEventListener('click', () => {
+    li.classList.toggle('event--expanded');
+  });
+
   return li;
 }
 

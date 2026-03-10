@@ -484,6 +484,7 @@ body {
   border-left: 3px solid transparent;
   background: #13151e;
   animation: slide-in 0.15s ease;
+  cursor: pointer;
 }
 
 @keyframes slide-in {
@@ -514,4 +515,21 @@ body {
   font-size: 0.75rem;
   color: #475569;
   white-space: nowrap;
+}
+
+.event__details {
+  display: none;
+  grid-column: 1 / -1;
+  margin: 0.3rem 0 0;
+  padding: 0.5rem 0.7rem;
+  background: #0d0f17;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.event--expanded .event__details {
+  display: block;
 }
