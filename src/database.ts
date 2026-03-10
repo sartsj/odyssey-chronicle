@@ -531,10 +531,31 @@ export function insertEvent(event: GameEvent, commanderFid: string | null = null
   }
 }
 
+export interface SystemStats {
+  body_count: number | null;
+  all_bodies_found: number;
+  found_count: number;
+}
+
+export function getSystemStats(systemAddress: number): SystemStats | null {
+  const row = db.prepare(`
+    SELECT ss.body_count, ss.all_bodies_found,
+           COUNT(b.id) AS found_count
+    FROM star_systems ss
+    LEFT JOIN bodies b
+      ON b.system_address = ss.system_address
+     AND b.body_type NOT IN ('Barycenter', 'Unknown')
+    WHERE ss.system_address = ?
+    GROUP BY ss.system_address
+  `).get(systemAddress) as { body_count: number | null; all_bodies_found: number; found_count: number } | undefined;
+  return row ?? null;
+}
+
 export function getAllEvents(): GameEvent[] {
   const rows = db
-    .prepare('SELECT id, type, data, commander FROM events ORDER BY id ASC')
+    .prepare('SELECT id, type, data, commander FROM events ORDER BY id DESC LIMIT 100')
     .all() as Array<{ id: number; type: string; data: string; commander: string | null }>;
+  rows.reverse();
 
   return rows.map((row) => ({
     _id: `db-${row.id}`,
@@ -543,10 +564,6 @@ export function getAllEvents(): GameEvent[] {
     data: JSON.parse(row.data) as Record<string, unknown>,
     commander: row.commander,
   }));
-}
-
-export function clearEvents(): void {
-  db.exec('DELETE FROM events');
 }
 
 export function upsertCommander(fid: string, name: string): void {

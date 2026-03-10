@@ -139,6 +139,7 @@ function createBodyElement(body: SystemBody, cmdrName: string): HTMLLIElement {
   const terraform_state = document.createElement('span');
   if (body.terraform_state && body.terraform_state.toLowerCase() == "terraformable") {
     li.className += ' body--planet--terraformable'
+    type.className = `body__badge body__badge--type body__badge--terraformable`;
     terraform_state.className = 'body__icon';
     const img = document.createElement('img');
     img.src = terraformableIcon;
@@ -311,12 +312,12 @@ function createHistoryElement(visit: SystemVisit, onClick: () => void): HTMLLIEl
 
 function setCommander(cmdr: Commander | null): void {
   const el = document.getElementById('commander');
+  const systemNameEl = document.getElementById('system-name');
   if (!el) return;
   el.hidden = !cmdr;
+  if (systemNameEl) systemNameEl.textContent = cmdr?.currentSystemName ?? '';
   if (!cmdr) return;
-  el.textContent = cmdr.currentSystemName
-    ? `CMDR ${cmdr.name}  ·  ${cmdr.currentSystemName}`
-    : `CMDR ${cmdr.name}`;
+  el.textContent = `CMDR ${cmdr.name}`;
 }
 
 function setStatus(text: string, active: boolean): void {
@@ -330,6 +331,34 @@ function updateCount(): void {
   const list = document.getElementById('event-list');
   const counter = document.getElementById('event-count');
   if (counter && list) counter.textContent = `${list.childElementCount} events`;
+}
+
+async function populateSystemStats(
+  systemAddress: number | null,
+  countId = 'body-count',
+  tagId = 'all-bodies-tag',
+): Promise<void> {
+  const countEl = document.getElementById(countId) as HTMLSpanElement;
+  const tagEl   = document.getElementById(tagId)   as HTMLSpanElement;
+  if (!countEl || !tagEl) return;
+
+  if (systemAddress === null) {
+    countEl.textContent = '';
+    tagEl.hidden = true;
+    return;
+  }
+
+  const stats = await window.chronicle.getSystemStats(systemAddress);
+  if (!stats) {
+    countEl.textContent = '';
+    tagEl.hidden = true;
+    return;
+  }
+
+  countEl.textContent = stats.body_count != null
+    ? `${stats.found_count} / ${stats.body_count} bodies`
+    : `${stats.found_count} bodies`;
+  tagEl.hidden = !stats.all_bodies_found;
 }
 
 async function populateBodies(
@@ -368,14 +397,12 @@ async function init(): Promise<void> {
   const folderInput = document.getElementById('folder-path') as HTMLInputElement;
   const watchBtn   = document.getElementById('btn-watch')   as HTMLButtonElement;
   const stopBtn    = document.getElementById('btn-stop')    as HTMLButtonElement;
-  const clearBtn   = document.getElementById('btn-clear')   as HTMLButtonElement;
   const list             = document.getElementById('event-list')          as HTMLUListElement;
   const bodyList         = document.getElementById('body-list')           as HTMLUListElement;
   const historyList      = document.getElementById('history-list')        as HTMLUListElement;
   const historyViewList  = document.getElementById('history-view-list')   as HTMLDivElement;
   const historyViewDetail = document.getElementById('history-view-detail') as HTMLDivElement;
   const historyBackBtn   = document.getElementById('history-back-btn')    as HTMLButtonElement;
-  const historyDetailTitle = document.getElementById('history-detail-title') as HTMLSpanElement;
   const historyBodyList  = document.getElementById('history-body-list')   as HTMLUListElement;
 
   initTabs();
@@ -385,10 +412,12 @@ async function init(): Promise<void> {
   const cmdr = await window.chronicle.getCommander();
 
   function showHistoryDetail(visit: SystemVisit): void {
-    historyDetailTitle.textContent = visit.system_name ?? `#${visit.system_address}`;
+    const systemNameEl = document.getElementById('history-system-name');
+    if (systemNameEl) systemNameEl.textContent = visit.system_name ?? `#${visit.system_address}`;
     historyViewList.hidden = true;
     historyViewDetail.hidden = false;
     void populateBodies(historyBodyList, visit.system_address, cmdr?.name ?? '');
+    void populateSystemStats(visit.system_address, 'history-body-count', 'history-all-bodies-tag');
   }
 
   function showHistoryList(): void {
@@ -407,6 +436,7 @@ async function init(): Promise<void> {
 
   window.chronicle.onBodiesUpdated((systemAddress) => {
     void populateBodies(bodyList, systemAddress, cmdr.name);
+    void populateSystemStats(systemAddress);
   });
 
   window.chronicle.onHistoryUpdated(() => {
@@ -425,6 +455,7 @@ async function init(): Promise<void> {
       cleanupListener?.();
       cleanupListener = window.chronicle.onNewEvent((event) => {
         list.prepend(createEventElement(event));
+        if (list.childElementCount > 100) list.lastElementChild?.remove();
         updateCount();
       });
       watchBtn.disabled = true;
@@ -457,23 +488,19 @@ async function init(): Promise<void> {
     stopBtn.disabled = true;
   });
 
-  clearBtn.addEventListener('click', async () => {
-    await window.chronicle.clearEvents();
-    list.innerHTML = '';
-    updateCount();
-  });
-
   // Restore saved folder path in the input without auto-starting
   // (auto-start is handled by the main process via 'file:watching')
   setCommander(cmdr);
   await Promise.all([
     populateBodies(bodyList, cmdr?.currentSystem ?? null, cmdr.name),
+    populateSystemStats(cmdr?.currentSystem ?? null),
     refreshHistoryList(),
   ]);
 
   window.chronicle.onCommanderActive((cmdr) => {
     setCommander(cmdr);
     void populateBodies(bodyList, cmdr.currentSystem ?? null, cmdr.name);
+    void populateSystemStats(cmdr.currentSystem ?? null);
   });
 
   const savedFolder = await window.chronicle.getFolder();

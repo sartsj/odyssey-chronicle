@@ -8,35 +8,22 @@
     <div class="app">
       <header class="header">
         <h1 class="header__title">Odyssey Chronicle</h1>
-
-        <!-- <span id="watched-file" class="watched-file" hidden></span> -->
-        <span id="status" class="status">Not watching</span>
-      </header>
-
-      <div class="controls">
-        <input
-          id="folder-path"
-          class="controls__input"
-          type="text"
-          placeholder="Journal folder, e.g. /home/user/game/journals"
-        />
-        <button id="btn-watch" class="btn btn--primary">Scan &amp; Watch</button>
-        <button id="btn-stop" class="btn" disabled>Stop</button>
-        <button id="btn-clear" class="btn">Clear</button>
-        <span id="event-count" class="event-count">0 events</span>
-      </div>
-
-      <div class="stat-header">
         <span id="commander" class="commander" hidden></span>
-      </div>
+      </header>
 
       <div class="tabs">
         <button class="tab tab--active" data-tab="system">System</button>
         <button class="tab" data-tab="history">History</button>
         <button class="tab" data-tab="events">Event Log</button>
+        <button class="tab" data-tab="settings">Settings</button>
       </div>
 
       <div id="panel-system" class="tab-panel">
+        <div class="stat-header">
+          <span id="system-name" class="system-name"></span>
+          <span id="body-count" class="body-count"></span>
+          <span id="all-bodies-tag" class="tag tag--found" hidden>All Found</span>
+        </div>
         <ul id="body-list-header" class="body-list-header">
           <li class="body">
             <span></span>
@@ -59,7 +46,11 @@
         <div id="history-view-detail" hidden>
           <div class="history-detail-header">
             <button id="history-back-btn" class="btn">Back</button>
-            <span id="history-detail-title"></span>
+          </div>
+          <div class="stat-header">
+            <span id="history-system-name" class="system-name"></span>
+            <span id="history-body-count" class="body-count"></span>
+            <span id="history-all-bodies-tag" class="tag tag--found" hidden>All Found</span>
           </div>
           <ul id="history-body-list-header" class="body-list-header">
             <li class="body">
@@ -80,6 +71,27 @@
       <div id="panel-events" class="tab-panel tab-panel--hidden">
         <ul id="event-list" class="event-list"></ul>
       </div>
+
+      <div id="panel-settings" class="tab-panel tab-panel--hidden">
+        <div class="settings">
+          <div class="settings__row">
+            <label class="settings__label" for="folder-path">Journal folder</label>
+            <input
+              id="folder-path"
+              class="settings__input"
+              type="text"
+              placeholder="e.g. /home/user/game/journals"
+            />
+          </div>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <button id="btn-watch" class="btn btn--primary">Monitor</button>
+        <button id="btn-stop" class="btn" disabled>Stop</button>
+        <span id="status" class="status">Not watching</span>
+        <span id="event-count" class="event-count">0 events</span>
+      </footer>
     </div>
   </body>
 </html>

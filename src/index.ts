@@ -1,8 +1,8 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
-import { initDatabase, insertEvent, getAllEvents, clearEvents, upsertCommander, getLastCommander, upsertSystemFromLocation, updateCommanderSystem, markAllBodiesFound, updateBodyDiscoveredBy, updateBodyMappedBy, getBodiesBySystem, getSystemsVisited } from './database';
-export type { SystemBody, SystemVisit } from './database';
+import { initDatabase, insertEvent, getAllEvents, upsertCommander, getLastCommander, upsertSystemFromLocation, updateCommanderSystem, markAllBodiesFound, updateBodyDiscoveredBy, updateBodyMappedBy, getBodiesBySystem, getSystemsVisited, getSystemStats } from './database';
+export type { SystemBody, SystemVisit, SystemStats } from './database';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -105,11 +105,11 @@ function findLatestFile(folder: string): string | null {
     })
     .sort((a, b) => b.mtime - a.mtime); // newest first
 
-  console.log('[findLatestFile] candidates:', files.map(f => `${path.basename(f.path)} mtime=${new Date(f.mtime).toISOString()}`));
+  // console.log('[findLatestFile] candidates:', files.map(f => `${path.basename(f.path)} mtime=${new Date(f.mtime).toISOString()}`));
 
   for (const file of files) {
     const hasShutdown = hasShutdownAtEnd(file.path);
-    console.log(`[findLatestFile] ${path.basename(file.path)} hasShutdown=${hasShutdown}`);
+    // console.log(`[findLatestFile] ${path.basename(file.path)} hasShutdown=${hasShutdown}`);
     if (!hasShutdown) return file.path;
   }
   return null;
@@ -404,13 +404,13 @@ function registerIpcHandlers(win: BrowserWindow): void {
 
   ipcMain.handle('events:getAll', () => getAllEvents());
 
-  ipcMain.handle('events:clear', () => clearEvents());
-
   ipcMain.handle('bodies:get', (_event, systemAddress: number) =>
     getBodiesBySystem(systemAddress)
   );
 
   ipcMain.handle('history:get', () => getSystemsVisited());
+
+  ipcMain.handle('system:stats', (_event, systemAddress: number) => getSystemStats(systemAddress));
 }
 
 const createWindow = (): void => {
