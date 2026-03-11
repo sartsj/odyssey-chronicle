@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Odyssey Chronicle",
+  "version": "1.0.0",
+  "identifier": "com.odysseychronicle.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run webpack:dev",
+    "beforeBuildCommand": "npm run webpack:build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Odyssey Chronicle",
+        "width": 900,
+        "height": 600,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  }
+}

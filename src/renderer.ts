@@ -1,6 +1,7 @@
 import './index.css';
-import type { GameEvent, WatchingInfo, Commander, SystemBody, SystemVisit } from './index';
-import type { ChronicleAPI } from './preload';
+import { invoke } from '@tauri-apps/api/core';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import type { GameEvent, WatchingInfo, Commander, SystemBody, SystemVisit } from './types';
 import { getPossibleSpecies } from './bio_data';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -11,12 +12,6 @@ const discoveredIcon = require('../static/discovered.svg') as string;
 const mappedIcon = require('../static/mapped.svg') as string;
 const footfallIcon = require('../static/footfall.svg') as string;
 const biologicalsIcon = require('../static/biologicals.svg') as string;
-
-declare global {
-  interface Window {
-    chronicle: ChronicleAPI;
-  }
-}
 
 function createEventElement(event: GameEvent): HTMLLIElement {
   const li = document.createElement('li');
@@ -348,7 +343,9 @@ async function populateSystemStats(
     return;
   }
 
-  const stats = await window.chronicle.getSystemStats(systemAddress);
+  const stats = await invoke<{ body_count: number | null; all_bodies_found: number; found_count: number } | null>(
+    'system_stats', { systemAddress }
+  );
   if (!stats) {
     countEl.textContent = '';
     tagEl.hidden = true;
@@ -368,7 +365,7 @@ async function populateBodies(
 ): Promise<void> {
   targetList.innerHTML = '';
   if (systemAddress === null) return;
-  const bodies = await window.chronicle.getBodies(systemAddress);
+  const bodies = await invoke<SystemBody[]>('bodies_get', { systemAddress });
   for (const entry of buildBodyEntries(bodies)) {
     targetList.append(
       entry.kind === 'group'
@@ -407,9 +404,9 @@ async function init(): Promise<void> {
 
   initTabs();
 
-  let cleanupListener: (() => void) | null = null;
+  let unlistenNewEvent: UnlistenFn | null = null;
 
-  const cmdr = await window.chronicle.getCommander();
+  const cmdr = await invoke<Commander | null>('commander_get');
 
   function showHistoryDetail(visit: SystemVisit): void {
     const systemNameEl = document.getElementById('history-system-name');
@@ -430,34 +427,34 @@ async function init(): Promise<void> {
 
   async function refreshHistoryList(): Promise<void> {
     historyList.innerHTML = '';
-    const visits = await window.chronicle.getHistory();
+    const visits = await invoke<SystemVisit[]>('history_get');
     for (const visit of visits) historyList.append(createHistoryElement(visit, () => showHistoryDetail(visit)));
   }
 
-  window.chronicle.onBodiesUpdated((systemAddress) => {
-    void populateBodies(bodyList, systemAddress, cmdr.name);
-    void populateSystemStats(systemAddress);
+  await listen<number>('bodies:updated', (e) => {
+    void populateBodies(bodyList, e.payload, cmdr?.name ?? '');
+    void populateSystemStats(e.payload);
   });
 
-  window.chronicle.onHistoryUpdated(() => {
+  await listen<null>('history:updated', () => {
     void refreshHistoryList();
   });
 
   function applyWatchingInfo(info: WatchingInfo): void {
     if (info.scanning) {
       setStatus('Scanning for new session...', false);
-      cleanupListener?.();
-      cleanupListener = null;
+      unlistenNewEvent?.();
+      unlistenNewEvent = null;
       watchBtn.disabled = true;
       stopBtn.disabled = false;
     } else if (info.file) {
       setStatus(`Watching: ${info.filename}`, true);
-      cleanupListener?.();
-      cleanupListener = window.chronicle.onNewEvent((event) => {
-        list.prepend(createEventElement(event));
+      unlistenNewEvent?.();
+      listen<GameEvent>('event:new', (e) => {
+        list.prepend(createEventElement(e.payload));
         if (list.childElementCount > 100) list.lastElementChild?.remove();
         updateCount();
-      });
+      }).then(fn => { unlistenNewEvent = fn; });
       watchBtn.disabled = true;
       stopBtn.disabled = false;
     } else {
@@ -468,45 +465,43 @@ async function init(): Promise<void> {
   }
 
   // Main process fires this on startup if a folder was previously saved
-  window.chronicle.onWatchingFile((info) => {
-    folderInput.value = info.folder;
-    applyWatchingInfo(info);
+  await listen<WatchingInfo>('file:watching', (e) => {
+    folderInput.value = e.payload.folder;
+    applyWatchingInfo(e.payload);
+  });
+
+  await listen<Commander>('commander:active', (e) => {
+    setCommander(e.payload);
+    void populateBodies(bodyList, e.payload.currentSystem ?? null, e.payload.name);
+    void populateSystemStats(e.payload.currentSystem ?? null);
   });
 
   watchBtn.addEventListener('click', async () => {
     const folder = folderInput.value.trim();
     if (!folder) return;
-    applyWatchingInfo(await window.chronicle.setFolder(folder));
+    applyWatchingInfo(await invoke<WatchingInfo>('folder_set', { folder }));
   });
 
   stopBtn.addEventListener('click', async () => {
-    cleanupListener?.();
-    cleanupListener = null;
-    await window.chronicle.stopWatching();
+    unlistenNewEvent?.();
+    unlistenNewEvent = null;
+    await invoke('file_stop');
     setStatus('Not watching', false);
     watchBtn.disabled = false;
     stopBtn.disabled = true;
   });
 
-  // Restore saved folder path in the input without auto-starting
-  // (auto-start is handled by the main process via 'file:watching')
   setCommander(cmdr);
   await Promise.all([
-    populateBodies(bodyList, cmdr?.currentSystem ?? null, cmdr.name),
+    populateBodies(bodyList, cmdr?.currentSystem ?? null, cmdr?.name ?? ''),
     populateSystemStats(cmdr?.currentSystem ?? null),
     refreshHistoryList(),
   ]);
 
-  window.chronicle.onCommanderActive((cmdr) => {
-    setCommander(cmdr);
-    void populateBodies(bodyList, cmdr.currentSystem ?? null, cmdr.name);
-    void populateSystemStats(cmdr.currentSystem ?? null);
-  });
-
-  const savedFolder = await window.chronicle.getFolder();
+  const savedFolder = await invoke<string | null>('folder_get');
   if (savedFolder) folderInput.value = savedFolder;
 
-  const past = await window.chronicle.getAllEvents();
+  const past = await invoke<GameEvent[]>('events_get_all');
   for (const event of past) list.prepend(createEventElement(event));
   updateCount();
 }

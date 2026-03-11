@@ -2,7 +2,7 @@
  * Biological species prediction data ported from EDMC-BioScan
  * https://github.com/Silarn/EDMC-BioScan/tree/master/src/bio_scan/bio_data
  */
-import type { SystemBody } from './database';
+import type { SystemBody } from './types';
 import { findRegion, regionName, systemInRegion } from './region_map';
 
 export interface BioRuleset {
