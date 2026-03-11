@@ -4,14 +4,13 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { GameEvent, WatchingInfo, Commander, SystemBody, SystemVisit } from './types';
 import { getPossibleSpecies } from './bio_data';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const landableIcon = require('../static/landable.svg') as string;
-const terraformableIcon = require('../static/terraformable.svg') as string;
-const terraformedIcon = require('../static/terraform_other.svg') as string;
-const discoveredIcon = require('../static/discovered.svg') as string;
-const mappedIcon = require('../static/mapped.svg') as string;
-const footfallIcon = require('../static/footfall.svg') as string;
-const biologicalsIcon = require('../static/biologicals.svg') as string;
+import landableIcon from '../static/landable.svg';
+import terraformableIcon from '../static/terraformable.svg';
+import terraformedIcon from '../static/terraform_other.svg';
+import discoveredIcon from '../static/discovered.svg';
+import mappedIcon from '../static/mapped.svg';
+import footfallIcon from '../static/footfall.svg';
+import biologicalsIcon from '../static/biologicals.svg';
 
 function createEventElement(event: GameEvent): HTMLLIElement {
   const li = document.createElement('li');
