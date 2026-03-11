@@ -1,8 +1,8 @@
 import './index.css';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import type { GameEvent, WatchingInfo, Commander, SystemBody, SystemVisit } from './types';
-import { getPossibleSpecies } from './bio_data';
+import type { BioScan, GameEvent, WatchingInfo, Commander, SystemBody, SystemVisit } from './types';
+import { getPossibleSpecies, getSpeciesValue } from './bio_data';
 
 import landableIcon from '../static/landable.svg';
 import terraformableIcon from '../static/terraformable.svg';
@@ -70,7 +70,7 @@ function buildBodyEntries(bodies: SystemBody[]): BodyEntry[] {
   return result;
 }
 
-function createBodyGroup(key: string, members: SystemBody[], cmdrName: string): HTMLLIElement {
+function createBodyGroup(key: string, members: SystemBody[], cmdrName: string, bioScansByBodyId: Map<number, BioScan[]>): HTMLLIElement {
   const li = document.createElement('li');
   li.className = 'body-group';
 
@@ -92,14 +92,14 @@ function createBodyGroup(key: string, members: SystemBody[], cmdrName: string): 
 
   const inner = document.createElement('ul');
   inner.className = 'body-group__list';
-  for (const body of members) inner.append(createBodyElement(body, cmdrName));
+  for (const body of members) inner.append(createBodyElement(body, cmdrName, bioScansByBodyId.get(body.body_id) ?? []));
   details.append(inner);
 
   li.append(details);
   return li;
 }
 
-function createBodyElement(body: SystemBody, cmdrName: string): HTMLLIElement {
+function createBodyElement(body: SystemBody, cmdrName: string, bioScansForBody: BioScan[]): HTMLLIElement {
   const li = document.createElement('li');
   li.className = `body body--${body.body_type.toLowerCase()}`;
 
@@ -226,38 +226,81 @@ function createBodyElement(body: SystemBody, cmdrName: string): HTMLLIElement {
 
     details.appendChild(summary);
 
-    const matches = getPossibleSpecies(body);
     const ul = document.createElement('ul');
     ul.className = 'bio-species__list';
-    if (matches.length === 0) {
+
+    // Render confirmed scans first
+    for (const scan of bioScansForBody) {
       const li2 = document.createElement('li');
-      li2.className = 'bio-species__item bio-species__item--none';
-      li2.textContent = 'No matches (insufficient scan data)';
-      ul.appendChild(li2);
-    } else {
-      for (const match of matches) {
-        const li2 = document.createElement('li');
-        li2.className = match.uncertain
-          ? 'bio-species__item bio-species__item--uncertain'
-          : 'bio-species__item';
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'bio-species__name';
-        nameSpan.textContent = match.name;
+      li2.className = 'bio-species__item bio-species__item--confirmed';
+
+      const statusBadge = document.createElement('span');
+      statusBadge.className = `bio-species__status bio-species__status--${scan.status}`;
+      statusBadge.textContent = scan.status === 'complete' ? 'complete' : scan.status === 'collecting' ? '2nd sample' : 'genus only';
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'bio-species__name';
+      nameSpan.textContent = scan.species ?? scan.genus;
+      if (scan.variant) nameSpan.title = scan.variant;
+
+      li2.appendChild(statusBadge);
+      li2.appendChild(nameSpan);
+
+      if (scan.first_found) {
+        const firstSpan = document.createElement('span');
+        firstSpan.className = 'bio-species__flag bio-species__flag--first';
+        firstSpan.textContent = '★';
+        firstSpan.title = 'First found';
+        li2.appendChild(firstSpan);
+      }
+
+      if (scan.status === 'complete') {
         const valueSpan = document.createElement('span');
         valueSpan.className = 'bio-species__value';
-        valueSpan.textContent = `${match.value.toLocaleString()} cr`;
-        li2.appendChild(nameSpan);
+        valueSpan.textContent = scan.base_value != null
+          ? `${scan.base_value.toLocaleString()} cr`
+          : '— cr';
         li2.appendChild(valueSpan);
-        if (match.uncertain) {
-          const flag = document.createElement('span');
-          flag.className = 'bio-species__flag';
-          flag.textContent = '?';
-          flag.title = 'Conditions met but regional/special requirements unknown';
-          li2.appendChild(flag);
-        }
+      }
+
+      ul.appendChild(li2);
+    }
+
+    // For remaining unconfirmed signals, show predictions
+    const unconfirmedCount = (body.biological_signals ?? 0) - bioScansForBody.length;
+    if (unconfirmedCount > 0) {
+      const matches = getPossibleSpecies(body);
+      if (matches.length === 0) {
+        const li2 = document.createElement('li');
+        li2.className = 'bio-species__item bio-species__item--none';
+        li2.textContent = 'No matches (insufficient scan data)';
         ul.appendChild(li2);
+      } else {
+        for (const match of matches) {
+          const li2 = document.createElement('li');
+          li2.className = match.uncertain
+            ? 'bio-species__item bio-species__item--uncertain'
+            : 'bio-species__item';
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'bio-species__name';
+          nameSpan.textContent = match.name;
+          const valueSpan = document.createElement('span');
+          valueSpan.className = 'bio-species__value';
+          valueSpan.textContent = `${match.value.toLocaleString()} cr`;
+          li2.appendChild(nameSpan);
+          li2.appendChild(valueSpan);
+          if (match.uncertain) {
+            const flag = document.createElement('span');
+            flag.className = 'bio-species__flag';
+            flag.textContent = '?';
+            flag.title = 'Conditions met but regional/special requirements unknown';
+            li2.appendChild(flag);
+          }
+          ul.appendChild(li2);
+        }
       }
     }
+
     details.appendChild(ul);
     biologicals.appendChild(details);
   } else {

@@ -1871,6 +1871,11 @@ function checkRuleset(
  * For each species: at least one ruleset must not return 'no'.
  * The result is marked uncertain if the best match across rulesets is 'uncertain'.
  */
+export function getSpeciesValue(speciesName: string): number | null {
+  const found = SPECIES.find(s => s.name === speciesName);
+  return found ? found.value : null;
+}
+
 export function getPossibleSpecies(body: SystemBody): BioMatch[] {
   // Only landable planets can have biologicals
   if (body.body_type !== 'Planet' && !body.landable) return [];

@@ -20,7 +20,23 @@ export interface Commander {
   currentSystemName: string | null;
 }
 
+export interface BioScan {
+  id: number;
+  system_address: number;
+  body_id: number;
+  body_name: string | null;
+  genus: string;
+  species: string | null;
+  variant: string | null;
+  status: 'genus' | 'collecting' | 'complete';
+  first_found: boolean;
+  base_value: number | null;
+  commander_fid: string | null;
+  updated_at: string;
+}
+
 export interface SystemBody {
+  body_id: number;
   body_name: string;
   body_type: string;
   planet_class: string | null;

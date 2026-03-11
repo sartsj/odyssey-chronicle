@@ -401,6 +401,12 @@ pub fn read_new_lines(
             }
         }
 
+        if event_type == "SAASignalsFound" || event_type == "ScanOrganic" || event_type == "CodexEntry" {
+            if let Some(sa) = data["SystemAddress"].as_i64() {
+                app.emit("bio_scan:updated", sa).ok();
+            }
+        }
+
         if event_type == "Shutdown" {
             let folder = read_config(app).folder;
             stop_watching(state);

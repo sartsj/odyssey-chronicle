@@ -29,7 +29,24 @@ pub struct Commander {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BioScan {
+    pub id: i64,
+    pub system_address: i64,
+    pub body_id: i64,
+    pub body_name: Option<String>,
+    pub genus: String,
+    pub species: Option<String>,
+    pub variant: Option<String>,
+    pub status: String,
+    pub first_found: bool,
+    pub base_value: Option<i64>,
+    pub commander_fid: Option<String>,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemBody {
+    pub body_id: i64,
     pub body_name: String,
     pub body_type: String,
     pub planet_class: Option<String>,

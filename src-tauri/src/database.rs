@@ -1,4 +1,4 @@
-use crate::types::{GameEvent, SystemBody, SystemStats, SystemVisit};
+use crate::types::{BioScan, GameEvent, SystemBody, SystemStats, SystemVisit};
 use rusqlite::{params, Connection};
 use serde_json::Value;
 use std::path::PathBuf;
@@ -137,6 +137,29 @@ pub fn init_database(path: &PathBuf) -> Connection {
     )
     .expect("failed to create tables");
 
+    conn.execute_batch(
+        "
+        CREATE TABLE IF NOT EXISTS bio_scans (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            system_address INTEGER NOT NULL,
+            body_id        INTEGER NOT NULL,
+            body_name      TEXT,
+            genus          TEXT NOT NULL,
+            species        TEXT,
+            variant        TEXT,
+            status         TEXT NOT NULL DEFAULT 'genus',
+            first_found    INTEGER NOT NULL DEFAULT 0,
+            base_value     INTEGER,
+            commander_fid  TEXT,
+            updated_at     TEXT NOT NULL
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS bio_scans_species_idx
+            ON bio_scans(system_address, body_id, species)
+            WHERE species IS NOT NULL;
+        ",
+    )
+    .expect("failed to create bio_scans table");
+
     // Backfill systems_visited from FSDJump events
     conn.execute_batch(
         "
@@ -202,6 +225,112 @@ fn process_fss_body_signals(conn: &Connection, d: &Value) {
     conn.execute(
         "UPDATE bodies SET biological_signals = ?1 WHERE body_name = ?2",
         params![bio_count, body_name],
+    )
+    .ok();
+}
+
+fn lookup_body_name(conn: &Connection, system_address: i64, body_id: i64) -> Option<String> {
+    conn.query_row(
+        "SELECT body_name FROM bodies WHERE system_address = ?1 AND body_id = ?2 LIMIT 1",
+        params![system_address, body_id],
+        |row| row.get(0),
+    )
+    .ok()
+}
+
+fn process_saa_signals_found(conn: &Connection, d: &Value, commander_fid: Option<&str>) {
+    let system_address = match d["SystemAddress"].as_i64() { Some(v) => v, None => return };
+    let body_id        = match d["BodyID"].as_i64()         { Some(v) => v, None => return };
+    let updated_at     = d["timestamp"].as_str().unwrap_or("");
+    let genuses        = match d["Genuses"].as_array()      { Some(v) => v, None => return };
+
+    let body_name = lookup_body_name(conn, system_address, body_id);
+
+    for genus_entry in genuses {
+        let genus = match genus_entry["Genus_Localised"].as_str() {
+            Some(g) if !g.is_empty() => g,
+            _ => continue,
+        };
+
+        let count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM bio_scans WHERE system_address = ?1 AND body_id = ?2 AND genus = ?3",
+                params![system_address, body_id, genus],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
+
+        if count == 0 {
+            conn.execute(
+                "INSERT INTO bio_scans (system_address, body_id, body_name, genus, status, commander_fid, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, 'genus', ?5, ?6)",
+                params![system_address, body_id, body_name, genus, commander_fid, updated_at],
+            )
+            .ok();
+        }
+    }
+}
+
+fn process_scan_organic(conn: &Connection, d: &Value, commander_fid: Option<&str>) {
+    let system_address = match d["SystemAddress"].as_i64()         { Some(v) => v, None => return };
+    let body_id        = match d["Body"].as_i64()                  { Some(v) => v, None => return };
+    let genus          = match d["Genus_Localised"].as_str()        { Some(v) => v, None => return };
+    let species        = match d["Species_Localised"].as_str()      { Some(v) => v, None => return };
+    let variant        = d["Variant_Localised"].as_str();
+    let scan_type      = d["ScanType"].as_str().unwrap_or("Log");
+    let updated_at     = d["timestamp"].as_str().unwrap_or("");
+
+    let status = match scan_type {
+        "Analyse" => "complete",
+        _ => "collecting",
+    };
+
+    // Step 1: try to upgrade an existing genus-only row
+    conn.execute(
+        "UPDATE bio_scans
+         SET species = ?1, variant = COALESCE(?2, variant), status = ?3,
+             commander_fid = COALESCE(commander_fid, ?4), updated_at = ?5
+         WHERE id = (
+             SELECT id FROM bio_scans
+             WHERE system_address = ?6 AND body_id = ?7 AND genus = ?8 AND species IS NULL
+             ORDER BY id LIMIT 1
+         )",
+        params![species, variant, status, commander_fid, updated_at,
+                system_address, body_id, genus],
+    )
+    .ok();
+
+    // Step 2: if no genus-only row was found, upsert by species
+    if conn.changes() == 0 {
+        let body_name = lookup_body_name(conn, system_address, body_id);
+        conn.execute(
+            "INSERT INTO bio_scans (system_address, body_id, body_name, genus, species, variant, status, commander_fid, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+             ON CONFLICT(system_address, body_id, species) DO UPDATE SET
+                 status     = CASE WHEN excluded.status = 'complete' THEN 'complete' ELSE bio_scans.status END,
+                 variant    = COALESCE(excluded.variant, bio_scans.variant),
+                 updated_at = excluded.updated_at",
+            params![system_address, body_id, body_name, genus, species, variant, status, commander_fid, updated_at],
+        )
+        .ok();
+    }
+}
+
+fn process_codex_entry(conn: &Connection, d: &Value) {
+    let is_new = d["IsNewEntry"].as_bool().unwrap_or(false);
+    if !is_new { return; }
+
+    let category = d["Category"].as_str().unwrap_or("").to_lowercase();
+    if !category.contains("biology") { return; }
+
+    let system_address = match d["SystemAddress"].as_i64() { Some(v) => v, None => return };
+    let body_id        = match d["Body"].as_i64()           { Some(v) => v, None => return };
+    let species        = match d["Name_Localised"].as_str() { Some(v) => v, None => return };
+
+    conn.execute(
+        "UPDATE bio_scans SET first_found = 1
+         WHERE system_address = ?1 AND body_id = ?2 AND species = ?3",
+        params![system_address, body_id, species],
     )
     .ok();
 }
@@ -507,6 +636,69 @@ fn replay_scan_events_for_system(conn: &Connection, system_address: i64) {
             process_fss_body_signals(conn, &d);
         }
     }
+
+    replay_bio_scan_events_for_system(conn, system_address);
+}
+
+fn replay_bio_scan_events_for_system(conn: &Connection, system_address: i64) {
+    // Replay SAASignalsFound
+    let rows: Vec<(String, Option<String>)> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT data, commander FROM events WHERE type = 'SAASignalsFound'
+                 AND json_extract(data, '$.SystemAddress') = ?1 ORDER BY id ASC",
+            )
+            .unwrap();
+        stmt.query_map(params![system_address], |row| Ok((row.get(0)?, row.get(1)?)))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect()
+    };
+    for (data_str, cmdr) in &rows {
+        if let Ok(d) = serde_json::from_str::<Value>(data_str) {
+            process_saa_signals_found(conn, &d, cmdr.as_deref());
+        }
+    }
+
+    // Replay ScanOrganic
+    let rows: Vec<(String, Option<String>)> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT data, commander FROM events WHERE type = 'ScanOrganic'
+                 AND json_extract(data, '$.SystemAddress') = ?1 ORDER BY id ASC",
+            )
+            .unwrap();
+        stmt.query_map(params![system_address], |row| Ok((row.get(0)?, row.get(1)?)))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect()
+    };
+    for (data_str, cmdr) in &rows {
+        if let Ok(d) = serde_json::from_str::<Value>(data_str) {
+            process_scan_organic(conn, &d, cmdr.as_deref());
+        }
+    }
+
+    // Replay CodexEntry (Biology, IsNewEntry only)
+    let rows: Vec<String> = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT data FROM events WHERE type = 'CodexEntry'
+                 AND json_extract(data, '$.SystemAddress') = ?1
+                 AND json_extract(data, '$.IsNewEntry') = 1
+                 ORDER BY id ASC",
+            )
+            .unwrap();
+        stmt.query_map(params![system_address], |row| row.get(0))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect()
+    };
+    for data_str in &rows {
+        if let Ok(d) = serde_json::from_str::<Value>(data_str) {
+            process_codex_entry(conn, &d);
+        }
+    }
 }
 
 pub fn insert_event(conn: &Connection, event: &GameEvent, commander_fid: Option<&str>) {
@@ -590,6 +782,18 @@ pub fn insert_event(conn: &Connection, event: &GameEvent, commander_fid: Option<
 
     if event.event_type == "FSSBodySignals" {
         process_fss_body_signals(conn, &event.data);
+    }
+
+    if event.event_type == "SAASignalsFound" {
+        process_saa_signals_found(conn, &event.data, commander_fid);
+    }
+
+    if event.event_type == "ScanOrganic" {
+        process_scan_organic(conn, &event.data, commander_fid);
+    }
+
+    if event.event_type == "CodexEntry" {
+        process_codex_entry(conn, &event.data);
     }
 }
 
@@ -711,7 +915,7 @@ pub fn update_body_mapped_by(conn: &Connection, body_name: &str, commander_name:
 pub fn get_bodies_by_system(conn: &Connection, system_address: i64) -> Vec<SystemBody> {
     let mut stmt = conn
         .prepare(
-            "SELECT b.body_name, b.body_type, b.planet_class, b.landable, b.terraform_state, b.distance,
+            "SELECT b.body_id, b.body_name, b.body_type, b.planet_class, b.landable, b.terraform_state, b.distance,
                     b.discovered_by, b.mapped_by, b.footfall_by, b.biological_signals,
                     b.atmosphere, b.atmosphere_type, b.atmosphere_composition,
                     b.surface_temp, b.gravity, b.pressure, b.volcanism,
@@ -724,33 +928,34 @@ pub fn get_bodies_by_system(conn: &Connection, system_address: i64) -> Vec<Syste
         .unwrap();
 
     stmt.query_map(params![system_address], |row| {
-        let atm_comp_str: Option<String> = row.get(12)?;
+        let atm_comp_str: Option<String> = row.get(13)?;
         let atmosphere_composition: Option<serde_json::Value> = atm_comp_str
             .as_deref()
             .and_then(|s| serde_json::from_str(s).ok());
 
         Ok(SystemBody {
-            body_name: row.get(0)?,
-            body_type: row.get(1)?,
-            planet_class: row.get(2)?,
-            landable: row.get(3)?,
-            terraform_state: row.get(4)?,
-            distance: row.get(5)?,
-            discovered_by: row.get(6)?,
-            mapped_by: row.get(7)?,
-            footfall_by: row.get(8)?,
-            biological_signals: row.get(9)?,
-            atmosphere: row.get(10)?,
-            atmosphere_type: row.get(11)?,
+            body_id: row.get(0)?,
+            body_name: row.get(1)?,
+            body_type: row.get(2)?,
+            planet_class: row.get(3)?,
+            landable: row.get(4)?,
+            terraform_state: row.get(5)?,
+            distance: row.get(6)?,
+            discovered_by: row.get(7)?,
+            mapped_by: row.get(8)?,
+            footfall_by: row.get(9)?,
+            biological_signals: row.get(10)?,
+            atmosphere: row.get(11)?,
+            atmosphere_type: row.get(12)?,
             atmosphere_composition,
-            surface_temp: row.get(13)?,
-            gravity: row.get(14)?,
-            pressure: row.get(15)?,
-            volcanism: row.get(16)?,
-            star_class: row.get(17)?,
-            x: row.get(18)?,
-            y: row.get(19)?,
-            z: row.get(20)?,
+            surface_temp: row.get(14)?,
+            gravity: row.get(15)?,
+            pressure: row.get(16)?,
+            volcanism: row.get(17)?,
+            star_class: row.get(18)?,
+            x: row.get(19)?,
+            y: row.get(20)?,
+            z: row.get(21)?,
         })
     })
     .unwrap()
@@ -786,6 +991,46 @@ pub fn get_systems_visited(conn: &Connection) -> Vec<SystemVisit> {
     .unwrap()
     .filter_map(|r| r.ok())
     .collect()
+}
+
+pub fn get_bio_scans_by_system(conn: &Connection, system_address: i64) -> Vec<BioScan> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, system_address, body_id, body_name, genus, species, variant,
+                    status, first_found, base_value, commander_fid, updated_at
+             FROM bio_scans
+             WHERE system_address = ?1
+             ORDER BY body_id ASC, id ASC",
+        )
+        .unwrap();
+
+    stmt.query_map(params![system_address], |row| {
+        Ok(BioScan {
+            id: row.get(0)?,
+            system_address: row.get(1)?,
+            body_id: row.get(2)?,
+            body_name: row.get(3)?,
+            genus: row.get(4)?,
+            species: row.get(5)?,
+            variant: row.get(6)?,
+            status: row.get(7)?,
+            first_found: row.get(8)?,
+            base_value: row.get(9)?,
+            commander_fid: row.get(10)?,
+            updated_at: row.get(11)?,
+        })
+    })
+    .unwrap()
+    .filter_map(|r| r.ok())
+    .collect()
+}
+
+pub fn set_bio_scan_value(conn: &Connection, id: i64, base_value: i64) {
+    conn.execute(
+        "UPDATE bio_scans SET base_value = ?1 WHERE id = ?2",
+        params![base_value, id],
+    )
+    .ok();
 }
 
 pub fn get_system_stats(conn: &Connection, system_address: i64) -> Option<SystemStats> {

@@ -1,7 +1,7 @@
 use crate::config::{read_config, write_config, Config};
 use crate::database;
 use crate::state::AppState;
-use crate::types::{Commander, GameEvent, SystemBody, SystemStats, SystemVisit, WatchingInfo};
+use crate::types::{BioScan, Commander, GameEvent, SystemBody, SystemStats, SystemVisit, WatchingInfo};
 use crate::watcher;
 use rusqlite::Connection;
 use std::path::PathBuf;
@@ -94,4 +94,21 @@ pub fn system_stats(
     conn: State<'_, Arc<Mutex<Connection>>>,
 ) -> Option<SystemStats> {
     database::get_system_stats(&conn.lock().unwrap(), system_address)
+}
+
+#[tauri::command]
+pub fn bio_scans_get(
+    system_address: i64,
+    conn: State<'_, Arc<Mutex<Connection>>>,
+) -> Vec<BioScan> {
+    database::get_bio_scans_by_system(&conn.lock().unwrap(), system_address)
+}
+
+#[tauri::command]
+pub fn bio_scan_set_value(
+    id: i64,
+    base_value: i64,
+    conn: State<'_, Arc<Mutex<Connection>>>,
+) {
+    database::set_bio_scan_value(&conn.lock().unwrap(), id, base_value);
 }
