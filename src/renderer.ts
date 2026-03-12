@@ -250,7 +250,9 @@ function createBodyElement(body: SystemBody, cmdrName: string, bioScansForBody: 
       li2.appendChild(statusBadge);
       li2.appendChild(nameSpan);
 
+      let scanValue = scan.base_value
       if (scan.first_found) {
+        scanValue = scanValue * 4
         const firstSpan = document.createElement('span');
         firstSpan.className = 'bio-species__flag bio-species__flag--first';
         firstSpan.textContent = '★';
@@ -261,8 +263,8 @@ function createBodyElement(body: SystemBody, cmdrName: string, bioScansForBody: 
       if (scan.status === 'complete') {
         const valueSpan = document.createElement('span');
         valueSpan.className = 'bio-species__value';
-        valueSpan.textContent = scan.base_value != null
-          ? `${scan.base_value.toLocaleString()} cr`
+        valueSpan.textContent = scanValue != null
+          ? `${scanValue.toLocaleString()} cr`
           : '— cr';
         li2.appendChild(valueSpan);
       }
@@ -276,7 +278,7 @@ function createBodyElement(body: SystemBody, cmdrName: string, bioScansForBody: 
       const listTitle = document.createElement('div');
       listTitle.textContent = 'Predicted biologicals';
       ul.appendChild(listTitle)
-      
+
       const matches = getPossibleSpecies(body);
       if (matches.length === 0) {
         const li2 = document.createElement('li');
