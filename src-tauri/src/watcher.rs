@@ -163,11 +163,18 @@ pub fn read_file_header(
             ) {
                 database::upsert_commander(conn, fid, name);
                 cmdr_fid = Some(fid.to_string());
+                // Preserve existing system info if it's the same commander (loaded from DB)
+                let (existing_system, existing_system_name) = state
+                    .active_commander
+                    .as_ref()
+                    .filter(|c| c.fid == fid)
+                    .map(|c| (c.current_system, c.current_system_name.clone()))
+                    .unwrap_or((None, None));
                 state.active_commander = Some(Commander {
                     fid: fid.to_string(),
                     name: name.to_string(),
-                    current_system: None,
-                    current_system_name: None,
+                    current_system: existing_system,
+                    current_system_name: existing_system_name,
                 });
                 app.emit("commander:active", state.active_commander.clone()).ok();
                 continue;
