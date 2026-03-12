@@ -306,7 +306,7 @@ fn process_scan_organic(conn: &Connection, d: &Value, commander_fid: Option<&str
         conn.execute(
             "INSERT INTO bio_scans (system_address, body_id, body_name, genus, species, variant, status, commander_fid, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
-             ON CONFLICT(system_address, body_id, species) DO UPDATE SET
+             ON CONFLICT(system_address, body_id, species) WHERE species IS NOT NULL DO UPDATE SET
                  status     = CASE WHEN excluded.status = 'complete' THEN 'complete' ELSE bio_scans.status END,
                  variant    = COALESCE(excluded.variant, bio_scans.variant),
                  updated_at = excluded.updated_at",
@@ -314,25 +314,51 @@ fn process_scan_organic(conn: &Connection, d: &Value, commander_fid: Option<&str
         )
         .ok();
     }
+
+    // Belt-and-suspenders: Analyse scans always force status to 'complete'
+    if status == "complete" {
+        conn.execute(
+            "UPDATE bio_scans SET status = 'complete', updated_at = ?1
+             WHERE system_address = ?2 AND body_id = ?3 AND species = ?4",
+            params![updated_at, system_address, body_id, species],
+        )
+        .ok();
+    }
 }
 
-fn process_codex_entry(conn: &Connection, d: &Value) {
-    let is_new = d["IsNewEntry"].as_bool().unwrap_or(false);
-    if !is_new { return; }
+pub fn process_disembark_footfall(conn: &Connection, d: &Value, commander_name: &str) {
+    if d["OnPlanet"].as_bool() != Some(true) { return; }
+    let body_name = match d["Body"].as_str() { Some(v) => v, None => return };
 
-    let category = d["Category"].as_str().unwrap_or("").to_lowercase();
-    if !category.contains("biology") { return; }
-
-    let system_address = match d["SystemAddress"].as_i64() { Some(v) => v, None => return };
-    let body_id        = match d["Body"].as_i64()           { Some(v) => v, None => return };
-    let species        = match d["Name_Localised"].as_str() { Some(v) => v, None => return };
+    let already_claimed: bool = conn
+        .query_row(
+            "SELECT footfall_by IS NOT NULL FROM bodies WHERE body_name = ?1 LIMIT 1",
+            params![body_name],
+            |row| row.get(0),
+        )
+        .unwrap_or(true);
+    if already_claimed { return; }
 
     conn.execute(
-        "UPDATE bio_scans SET first_found = 1
-         WHERE system_address = ?1 AND body_id = ?2 AND species = ?3",
-        params![system_address, body_id, species],
+        "UPDATE bodies SET footfall_by = ?1 WHERE body_name = ?2 AND footfall_by IS NULL",
+        params![commander_name, body_name],
     )
     .ok();
+
+    if let Some((sa, bid)) = conn
+        .query_row(
+            "SELECT system_address, body_id FROM bodies WHERE body_name = ?1 LIMIT 1",
+            params![body_name],
+            |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
+        )
+        .ok()
+    {
+        conn.execute(
+            "UPDATE bio_scans SET first_found = 1 WHERE system_address = ?1 AND body_id = ?2",
+            params![sa, bid],
+        )
+        .ok();
+    }
 }
 
 fn get_base_star_scan_value(star_type: &str) -> i64 {
@@ -679,24 +705,31 @@ fn replay_bio_scan_events_for_system(conn: &Connection, system_address: i64) {
         }
     }
 
-    // Replay CodexEntry (Biology, IsNewEntry only)
-    let rows: Vec<String> = {
+    // Replay Disembark (first footfall)
+    let rows: Vec<(String, String)> = {
         let mut stmt = conn
             .prepare(
-                "SELECT data FROM events WHERE type = 'CodexEntry'
-                 AND json_extract(data, '$.SystemAddress') = ?1
-                 AND json_extract(data, '$.IsNewEntry') = 1
-                 ORDER BY id ASC",
+                "SELECT e.data, c.name
+                 FROM events e
+                 JOIN commanders c ON c.fid = e.commander
+                 WHERE e.type = 'Disembark'
+                   AND json_extract(e.data, '$.OnPlanet') = 1
+                   AND EXISTS (
+                       SELECT 1 FROM bodies b
+                       WHERE b.body_name = json_extract(e.data, '$.Body')
+                         AND b.system_address = ?1
+                   )
+                 ORDER BY e.id ASC",
             )
             .unwrap();
-        stmt.query_map(params![system_address], |row| row.get(0))
+        stmt.query_map(params![system_address], |row| Ok((row.get(0)?, row.get(1)?)))
             .unwrap()
             .filter_map(|r| r.ok())
             .collect()
     };
-    for data_str in &rows {
+    for (data_str, cmdr_name) in &rows {
         if let Ok(d) = serde_json::from_str::<Value>(data_str) {
-            process_codex_entry(conn, &d);
+            process_disembark_footfall(conn, &d, cmdr_name);
         }
     }
 }
@@ -792,9 +825,6 @@ pub fn insert_event(conn: &Connection, event: &GameEvent, commander_fid: Option<
         process_scan_organic(conn, &event.data, commander_fid);
     }
 
-    if event.event_type == "CodexEntry" {
-        process_codex_entry(conn, &event.data);
-    }
 }
 
 pub fn get_all_events(conn: &Connection) -> Vec<GameEvent> {

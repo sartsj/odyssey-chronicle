@@ -386,6 +386,33 @@ pub fn read_new_lines(
             }
         }
 
+        if event_type == "Disembark" {
+            if data["OnPlanet"].as_bool() == Some(true) {
+                let cmdr_name = {
+                    state
+                        .lock()
+                        .unwrap()
+                        .active_commander
+                        .as_ref()
+                        .map(|c| c.name.clone())
+                };
+                if let Some(name) = cmdr_name {
+                    database::process_disembark_footfall(&conn_guard, data, &name);
+                }
+                let current_sa = {
+                    state
+                        .lock()
+                        .unwrap()
+                        .active_commander
+                        .as_ref()
+                        .and_then(|c| c.current_system)
+                };
+                if let Some(sa) = current_sa {
+                    app.emit("bodies:updated", sa).ok();
+                }
+            }
+        }
+
         if event_type == "FSSBodySignals" {
             let (sa, current_sa) = {
                 let s = state.lock().unwrap();
@@ -401,8 +428,11 @@ pub fn read_new_lines(
             }
         }
 
-        if event_type == "SAASignalsFound" || event_type == "ScanOrganic" || event_type == "CodexEntry" {
-            if let Some(sa) = data["SystemAddress"].as_i64() {
+        if event_type == "SAASignalsFound" || event_type == "ScanOrganic" || event_type == "Disembark" {
+            let sa = data["SystemAddress"].as_i64().or_else(|| {
+                state.lock().unwrap().active_commander.as_ref().and_then(|c| c.current_system)
+            });
+            if let Some(sa) = sa {
                 app.emit("bio_scan:updated", sa).ok();
             }
         }

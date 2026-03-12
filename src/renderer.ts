@@ -4,13 +4,13 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { BioScan, GameEvent, WatchingInfo, Commander, SystemBody, SystemVisit } from './types';
 import { getPossibleSpecies, getSpeciesValue } from './bio_data';
 
-import landableIcon from '../static/landable.svg';
-import terraformableIcon from '../static/terraformable.svg';
-import terraformedIcon from '../static/terraform_other.svg';
-import discoveredIcon from '../static/discovered.svg';
-import mappedIcon from '../static/mapped.svg';
-import footfallIcon from '../static/footfall.svg';
-import biologicalsIcon from '../static/biologicals.svg';
+const landableIcon     = new URL('../static/landable.svg',      import.meta.url).href;
+const terraformableIcon = new URL('../static/terraformable.svg', import.meta.url).href;
+const terraformedIcon  = new URL('../static/terraform_other.svg', import.meta.url).href;
+const discoveredIcon   = new URL('../static/discovered.svg',     import.meta.url).href;
+const mappedIcon       = new URL('../static/mapped.svg',         import.meta.url).href;
+const footfallIcon     = new URL('../static/footfall.svg',       import.meta.url).href;
+const biologicalsIcon  = new URL('../static/biologicals.svg',    import.meta.url).href;
 
 function createEventElement(event: GameEvent): HTMLLIElement {
   const li = document.createElement('li');
@@ -231,6 +231,10 @@ function createBodyElement(body: SystemBody, cmdrName: string, bioScansForBody: 
 
     // Render confirmed scans first
     for (const scan of bioScansForBody) {
+      const listTitle = document.createElement('div');
+      listTitle.textContent = 'Confirmed biologicals';
+      ul.appendChild(listTitle)
+
       const li2 = document.createElement('li');
       li2.className = 'bio-species__item bio-species__item--confirmed';
 
@@ -269,6 +273,10 @@ function createBodyElement(body: SystemBody, cmdrName: string, bioScansForBody: 
     // For remaining unconfirmed signals, show predictions
     const unconfirmedCount = (body.biological_signals ?? 0) - bioScansForBody.length;
     if (unconfirmedCount > 0) {
+      const listTitle = document.createElement('div');
+      listTitle.textContent = 'Predicted biologicals';
+      ul.appendChild(listTitle)
+      
       const matches = getPossibleSpecies(body);
       if (matches.length === 0) {
         const li2 = document.createElement('li');
@@ -407,12 +415,35 @@ async function populateBodies(
 ): Promise<void> {
   targetList.innerHTML = '';
   if (systemAddress === null) return;
-  const bodies = await invoke<SystemBody[]>('bodies_get', { systemAddress });
+
+  const [bodies, bioScans] = await Promise.all([
+    invoke<SystemBody[]>('bodies_get', { systemAddress }),
+    invoke<BioScan[]>('bio_scans_get', { systemAddress }),
+  ]);
+
+  // Resolve credit values for newly-complete scans (frontend owns bio_data.ts values)
+  for (const scan of bioScans) {
+    if (scan.status === 'complete' && scan.base_value === null && scan.species !== null) {
+      const baseValue = getSpeciesValue(scan.species);
+      if (baseValue !== null) {
+        void invoke('bio_scan_set_value', { id: scan.id, baseValue });
+        scan.base_value = baseValue;
+      }
+    }
+  }
+
+  const bioScansByBodyId = new Map<number, BioScan[]>();
+  for (const scan of bioScans) {
+    const arr = bioScansByBodyId.get(scan.body_id) ?? [];
+    arr.push(scan);
+    bioScansByBodyId.set(scan.body_id, arr);
+  }
+
   for (const entry of buildBodyEntries(bodies)) {
     targetList.append(
       entry.kind === 'group'
-        ? createBodyGroup(entry.key, entry.members, cmdrName)
-        : createBodyElement(entry.body, cmdrName)
+        ? createBodyGroup(entry.key, entry.members, cmdrName, bioScansByBodyId)
+        : createBodyElement(entry.body, cmdrName, bioScansByBodyId.get(entry.body.body_id) ?? [])
     );
   }
 }
@@ -449,6 +480,7 @@ async function init(): Promise<void> {
   let unlistenNewEvent: UnlistenFn | null = null;
 
   const cmdr = await invoke<Commander | null>('commander_get');
+  let currentSystemAddress: number | null = cmdr?.currentSystem ?? null;
 
   function showHistoryDetail(visit: SystemVisit): void {
     const systemNameEl = document.getElementById('history-system-name');
@@ -476,6 +508,12 @@ async function init(): Promise<void> {
   await listen<number>('bodies:updated', (e) => {
     void populateBodies(bodyList, e.payload, cmdr?.name ?? '');
     void populateSystemStats(e.payload);
+  });
+
+  await listen<number>('bio_scan:updated', (e) => {
+    if (e.payload === currentSystemAddress) {
+      void populateBodies(bodyList, currentSystemAddress, cmdr?.name ?? '');
+    }
   });
 
   await listen<null>('history:updated', () => {
@@ -513,9 +551,10 @@ async function init(): Promise<void> {
   });
 
   await listen<Commander>('commander:active', (e) => {
+    currentSystemAddress = e.payload.currentSystem ?? null;
     setCommander(e.payload);
-    void populateBodies(bodyList, e.payload.currentSystem ?? null, e.payload.name);
-    void populateSystemStats(e.payload.currentSystem ?? null);
+    void populateBodies(bodyList, currentSystemAddress, e.payload.name);
+    void populateSystemStats(currentSystemAddress);
   });
 
   watchBtn.addEventListener('click', async () => {
@@ -548,4 +587,8 @@ async function init(): Promise<void> {
   updateCount();
 }
 
-init();
+init().catch((err: unknown) => {
+  console.error('Renderer initialization failed:', err);
+  const status = document.getElementById('status');
+  if (status) status.textContent = `Init error: ${err instanceof Error ? err.message : String(err)}`;
+});

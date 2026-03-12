@@ -78,9 +78,12 @@ pub fn run() {
                         .to_string();
                     let file_str = file.to_string_lossy().to_string();
 
+                    let app_state_for_thread = app_state.clone();
                     start_watching(file, app_handle.clone(), conn, app_state);
 
-                    // Emit file:watching once the window is ready
+                    // Emit file:watching and commander:active once the window is ready.
+                    // commander:active fires immediately from read_file_header but the webview
+                    // may not have its listener registered yet, so we re-emit it here.
                     let app_handle2 = app_handle.clone();
                     let info = types::WatchingInfo {
                         folder,
@@ -92,6 +95,10 @@ pub fn run() {
                         // Small delay to ensure the webview is ready
                         std::thread::sleep(std::time::Duration::from_millis(500));
                         app_handle2.emit("file:watching", info).ok();
+                        let cmdr = app_state_for_thread.lock().unwrap().active_commander.clone();
+                        if let Some(cmdr) = cmdr {
+                            app_handle2.emit("commander:active", cmdr).ok();
+                        }
                     });
                 } else {
                     begin_polling(folder_path, app_handle, conn, app_state);
