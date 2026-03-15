@@ -229,12 +229,14 @@ function createBodyElement(body: SystemBody, cmdrName: string, bioScansForBody: 
     const ul = document.createElement('ul');
     ul.className = 'bio-species__list';
 
-    // Render confirmed scans first
-    for (const scan of bioScansForBody) {
+    if (bioScansForBody.length > 0) {
       const listTitle = document.createElement('div');
       listTitle.textContent = 'Confirmed biologicals';
       ul.appendChild(listTitle)
+    }
 
+    // Render confirmed scans first
+    for (const scan of bioScansForBody) {
       const li2 = document.createElement('li');
       li2.className = 'bio-species__item bio-species__item--confirmed';
 
@@ -272,14 +274,20 @@ function createBodyElement(body: SystemBody, cmdrName: string, bioScansForBody: 
       ul.appendChild(li2);
     }
 
-    // For remaining unconfirmed signals, show predictions
+    // For signals without species identified yet, show predictions
+    const genusOnlyScans = bioScansForBody.filter(s => s.status === 'genus');
     const unconfirmedCount = (body.biological_signals ?? 0) - bioScansForBody.length;
-    if (unconfirmedCount > 0) {
+    const pendingSpeciesCount = genusOnlyScans.length + unconfirmedCount;
+    if (pendingSpeciesCount > 0) {
       const listTitle = document.createElement('div');
       listTitle.textContent = 'Predicted biologicals';
       ul.appendChild(listTitle)
 
-      const matches = getPossibleSpecies(body);
+      let matches = getPossibleSpecies(body);
+      if (genusOnlyScans.length > 0) {
+        const knownGenera = new Set(genusOnlyScans.map(s => s.genus));
+        matches = matches.filter(m => knownGenera.has(m.name.split(' ')[0]));
+      }
       if (matches.length === 0) {
         const li2 = document.createElement('li');
         li2.className = 'bio-species__item bio-species__item--none';
