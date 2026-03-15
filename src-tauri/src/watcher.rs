@@ -435,7 +435,7 @@ pub fn read_new_lines(
             }
         }
 
-        if event_type == "SAASignalsFound" || event_type == "ScanOrganic" || event_type == "Disembark" {
+        if event_type == "SAASignalsFound" || event_type == "ScanOrganic" {
             let sa = data["SystemAddress"].as_i64().or_else(|| {
                 state.lock().unwrap().active_commander.as_ref().and_then(|c| c.current_system)
             });
