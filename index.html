@@ -14,6 +14,7 @@
       <div class="tabs">
         <button class="tab tab--active" data-tab="system">System</button>
         <button class="tab" data-tab="history">History</button>
+        <button class="tab" data-tab="biologicals">Biologicals</button>
         <button class="tab" data-tab="events">Event Log</button>
         <button class="tab" data-tab="settings">Settings</button>
       </div>
@@ -66,6 +67,13 @@
           </ul>
           <ul id="history-body-list" class="body-list"></ul>
         </div>
+      </div>
+
+      <div id="panel-biologicals" class="tab-panel tab-panel--hidden">
+        <div class="stat-header">
+          <span id="bio-total-value" class="bio-total-value"></span>
+        </div>
+        <div id="bio-body-list" class="bio-body-list"></div>
       </div>
 
       <div id="panel-events" class="tab-panel tab-panel--hidden">

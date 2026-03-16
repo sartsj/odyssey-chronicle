@@ -581,3 +581,75 @@ body {
 .event--expanded .event__details {
   display: block;
 }
+
+/* Biologicals tab */
+.bio-total-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4ade80;
+  font-family: monospace;
+}
+
+.bio-body-list {
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+}
+
+.bio-system-section {
+  background: #13151e;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bio-system-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bio-system-section__name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.bio-system-section__total {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4ade80;
+  font-family: monospace;
+}
+
+.bio-body-section {
+  padding-left: 0.5rem;
+  border-left: 2px solid #334155;
+}
+
+.bio-body-section__name {
+  margin: 0 0 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.bio-body-section__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bio-empty-state {
+  color: #64748b;
+  font-style: italic;
+  padding: 1rem;
+  font-size: 0.85rem;
+}

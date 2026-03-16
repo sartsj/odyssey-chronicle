@@ -458,6 +458,160 @@ async function populateBodies(
   }
 }
 
+function createBioBodySection(bodyName: string, scans: BioScan[]): HTMLDivElement {
+  const div = document.createElement('div');
+  div.className = 'bio-body-section';
+
+  const heading = document.createElement('h4');
+  heading.className = 'bio-body-section__name';
+  heading.textContent = bodyName;
+  div.appendChild(heading);
+
+  const ul = document.createElement('ul');
+  ul.className = 'bio-body-section__list';
+
+  for (const scan of scans) {
+    const li = document.createElement('li');
+    li.className = 'bio-species__item bio-species__item--confirmed';
+
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `bio-species__status bio-species__status--${scan.status}`;
+    statusBadge.textContent = scan.status === 'complete' ? 'complete'
+      : scan.status === 'collecting' ? '2nd sample' : 'genus only';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'bio-species__name';
+    nameSpan.textContent = scan.species ?? scan.genus;
+    if (scan.variant) nameSpan.title = scan.variant;
+
+    li.appendChild(statusBadge);
+    li.appendChild(nameSpan);
+
+    let scanValue = scan.base_value;
+    if (scan.first_found) {
+      scanValue = scanValue != null ? scanValue * 4 : null;
+      const firstSpan = document.createElement('span');
+      firstSpan.className = 'bio-species__flag bio-species__flag--first';
+      firstSpan.textContent = '★';
+      firstSpan.title = 'First found';
+      li.appendChild(firstSpan);
+    }
+
+    if (scan.status === 'complete') {
+      const valueSpan = document.createElement('span');
+      valueSpan.className = 'bio-species__value';
+      valueSpan.textContent = scanValue != null ? `${scanValue.toLocaleString()} cr` : '— cr';
+      li.appendChild(valueSpan);
+    }
+
+    ul.appendChild(li);
+  }
+
+  div.appendChild(ul);
+  return div;
+}
+
+function createBioSystemSection(systemName: string, scans: BioScan[]): HTMLDivElement {
+  const section = document.createElement('div');
+  section.className = 'bio-system-section';
+
+  let systemTotal = 0;
+  for (const scan of scans) {
+    if (scan.status === 'complete' && scan.base_value !== null) {
+      systemTotal += scan.base_value * (scan.first_found ? 4 : 1);
+    }
+  }
+
+  const header = document.createElement('div');
+  header.className = 'bio-system-section__header';
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'bio-system-section__name';
+  nameSpan.textContent = systemName;
+  header.appendChild(nameSpan);
+
+  if (systemTotal > 0) {
+    const totalSpan = document.createElement('span');
+    totalSpan.className = 'bio-system-section__total';
+    totalSpan.textContent = `${systemTotal.toLocaleString()} cr`;
+    header.appendChild(totalSpan);
+  }
+  section.appendChild(header);
+
+  const scansByBody = new Map<number, BioScan[]>();
+  for (const scan of scans) {
+    const arr = scansByBody.get(scan.body_id) ?? [];
+    arr.push(scan);
+    scansByBody.set(scan.body_id, arr);
+  }
+
+  for (const [, bodyScans] of scansByBody) {
+    const bodyName = bodyScans[0].body_name ?? `Body ${bodyScans[0].body_id}`;
+    section.appendChild(createBioBodySection(bodyName, bodyScans));
+  }
+
+  return section;
+}
+
+async function populateBiologicals(container: HTMLDivElement): Promise<void> {
+  const bioTotalValueEl = document.getElementById('bio-total-value') as HTMLSpanElement;
+  container.innerHTML = '';
+
+  const [visits, bioScans] = await Promise.all([
+    invoke<SystemVisit[]>('history_get'),
+    invoke<BioScan[]>('bio_scans_get_all'),
+  ]);
+
+  for (const scan of bioScans) {
+    if (scan.status === 'complete' && scan.base_value === null && scan.species !== null) {
+      const baseValue = getSpeciesValue(scan.species);
+      if (baseValue !== null) {
+        void invoke('bio_scan_set_value', { id: scan.id, baseValue });
+        scan.base_value = baseValue;
+      }
+    }
+  }
+
+  const systemNames = new Map<number, string>();
+  for (const visit of visits) {
+    if (visit.system_name && !systemNames.has(visit.system_address)) {
+      systemNames.set(visit.system_address, visit.system_name);
+    }
+  }
+
+  let totalValue = 0;
+  for (const scan of bioScans) {
+    if (scan.status === 'complete' && scan.base_value !== null) {
+      totalValue += scan.base_value * (scan.first_found ? 4 : 1);
+    }
+  }
+  if (bioTotalValueEl) {
+    bioTotalValueEl.textContent = totalValue > 0
+      ? `Total: ${totalValue.toLocaleString()} cr`
+      : 'No confirmed biologicals';
+  }
+
+  if (bioScans.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'bio-empty-state';
+    p.textContent = 'No biological scans recorded';
+    container.appendChild(p);
+    return;
+  }
+
+  const scansBySystem = new Map<number, BioScan[]>();
+  for (const scan of bioScans) {
+    const arr = scansBySystem.get(scan.system_address) ?? [];
+    arr.push(scan);
+    scansBySystem.set(scan.system_address, arr);
+  }
+
+  for (const [systemAddress, systemScans] of scansBySystem) {
+    const systemName = systemNames.get(systemAddress) ?? `#${systemAddress}`;
+    container.appendChild(createBioSystemSection(systemName, systemScans));
+  }
+}
+
 function initTabs(): void {
   const tabs = document.querySelectorAll<HTMLButtonElement>('.tab');
   tabs.forEach((tab) => {
@@ -484,6 +638,7 @@ async function init(): Promise<void> {
   const historyViewDetail = document.getElementById('history-view-detail') as HTMLDivElement;
   const historyBackBtn   = document.getElementById('history-back-btn')    as HTMLButtonElement;
   const historyBodyList  = document.getElementById('history-body-list')   as HTMLUListElement;
+  const bioBodiesContainer = document.getElementById('bio-body-list') as HTMLDivElement;
 
   initTabs();
 
@@ -524,6 +679,7 @@ async function init(): Promise<void> {
     if (e.payload === currentSystemAddress) {
       void populateBodies(bodyList, currentSystemAddress, cmdr?.name ?? '');
     }
+    void populateBiologicals(bioBodiesContainer);
   });
 
   await listen<null>('history:updated', () => {
@@ -586,6 +742,7 @@ async function init(): Promise<void> {
   await Promise.all([
     populateBodies(bodyList, cmdr?.currentSystem ?? null, cmdr?.name ?? ''),
     populateSystemStats(cmdr?.currentSystem ?? null),
+    populateBiologicals(bioBodiesContainer),
     refreshHistoryList(),
   ]);
 

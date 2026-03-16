@@ -1055,6 +1055,37 @@ pub fn get_bio_scans_by_system(conn: &Connection, system_address: i64) -> Vec<Bi
     .collect()
 }
 
+pub fn get_all_bio_scans(conn: &Connection) -> Vec<BioScan> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, system_address, body_id, body_name, genus, species, variant,
+                    status, first_found, base_value, commander_fid, updated_at
+             FROM bio_scans
+             ORDER BY system_address ASC, body_id ASC, id ASC",
+        )
+        .unwrap();
+
+    stmt.query_map([], |row| {
+        Ok(BioScan {
+            id: row.get(0)?,
+            system_address: row.get(1)?,
+            body_id: row.get(2)?,
+            body_name: row.get(3)?,
+            genus: row.get(4)?,
+            species: row.get(5)?,
+            variant: row.get(6)?,
+            status: row.get(7)?,
+            first_found: row.get(8)?,
+            base_value: row.get(9)?,
+            commander_fid: row.get(10)?,
+            updated_at: row.get(11)?,
+        })
+    })
+    .unwrap()
+    .filter_map(|r| r.ok())
+    .collect()
+}
+
 pub fn set_bio_scan_value(conn: &Connection, id: i64, base_value: i64) {
     conn.execute(
         "UPDATE bio_scans SET base_value = ?1 WHERE id = ?2",

@@ -105,6 +105,13 @@ pub fn bio_scans_get(
 }
 
 #[tauri::command]
+pub fn bio_scans_get_all(
+    conn: State<'_, Arc<Mutex<Connection>>>,
+) -> Vec<BioScan> {
+    database::get_all_bio_scans(&conn.lock().unwrap())
+}
+
+#[tauri::command]
 pub fn bio_scan_set_value(
     id: i64,
     base_value: i64,

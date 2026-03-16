@@ -29,6 +29,7 @@ pub fn run() {
             commands::system_stats,
             commands::bio_scans_get,
             commands::bio_scan_set_value,
+            commands::bio_scans_get_all,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
