@@ -222,6 +222,17 @@ fn process_fss_body_signals(conn: &Connection, d: &Value) {
         }
     }
 
+    // Ensure the body row exists before updating — FSSBodySignals often arrives
+    // before the Scan event that would normally create the row.
+    if let (Some(sa), Some(bid)) = (d["SystemAddress"].as_i64(), d["BodyID"].as_i64()) {
+        conn.execute(
+            "INSERT OR IGNORE INTO bodies (system_address, body_id, body_name, body_type, distance)
+             VALUES (?1, ?2, ?3, 'Unknown', 0)",
+            params![sa, bid, body_name],
+        )
+        .ok();
+    }
+
     conn.execute(
         "UPDATE bodies SET biological_signals = ?1 WHERE body_name = ?2",
         params![bio_count, body_name],
