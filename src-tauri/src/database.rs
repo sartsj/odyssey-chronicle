@@ -35,6 +35,7 @@ pub fn init_database(path: &PathBuf) -> Connection {
     let _ = conn.execute("ALTER TABLE star_systems ADD COLUMN x REAL", []);
     let _ = conn.execute("ALTER TABLE star_systems ADD COLUMN y REAL", []);
     let _ = conn.execute("ALTER TABLE star_systems ADD COLUMN z REAL", []);
+    let _ = conn.execute("ALTER TABLE bio_scans ADD COLUMN sample_count INTEGER NOT NULL DEFAULT 0", []);
     let _ = conn.execute(
         "ALTER TABLE bodies ADD COLUMN atmosphere_composition TEXT",
         [],
@@ -295,11 +296,13 @@ fn process_scan_organic(conn: &Connection, d: &Value, commander_fid: Option<&str
         "Analyse" => "complete",
         _ => "collecting",
     };
+    let sample_increment: i64 = if scan_type == "Analyse" { 0 } else { 1 };
 
     // Step 1: try to upgrade an existing genus-only row
     conn.execute(
         "UPDATE bio_scans
          SET species = ?1, variant = COALESCE(?2, variant), status = ?3,
+             sample_count = COALESCE(sample_count, 0) + ?9,
              commander_fid = COALESCE(commander_fid, ?4), updated_at = ?5
          WHERE id = (
              SELECT id FROM bio_scans
@@ -307,7 +310,7 @@ fn process_scan_organic(conn: &Connection, d: &Value, commander_fid: Option<&str
              ORDER BY id LIMIT 1
          )",
         params![species, variant, status, commander_fid, updated_at,
-                system_address, body_id, genus],
+                system_address, body_id, genus, sample_increment],
     )
     .ok();
 
@@ -315,13 +318,14 @@ fn process_scan_organic(conn: &Connection, d: &Value, commander_fid: Option<&str
     if conn.changes() == 0 {
         let body_name = lookup_body_name(conn, system_address, body_id);
         conn.execute(
-            "INSERT INTO bio_scans (system_address, body_id, body_name, genus, species, variant, status, commander_fid, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+            "INSERT INTO bio_scans (system_address, body_id, body_name, genus, species, variant, status, commander_fid, updated_at, sample_count)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
              ON CONFLICT(system_address, body_id, species) WHERE species IS NOT NULL DO UPDATE SET
-                 status     = CASE WHEN excluded.status = 'complete' THEN 'complete' ELSE bio_scans.status END,
-                 variant    = COALESCE(excluded.variant, bio_scans.variant),
-                 updated_at = excluded.updated_at",
-            params![system_address, body_id, body_name, genus, species, variant, status, commander_fid, updated_at],
+                 status       = CASE WHEN excluded.status = 'complete' THEN 'complete' ELSE bio_scans.status END,
+                 sample_count = bio_scans.sample_count + excluded.sample_count,
+                 variant      = COALESCE(excluded.variant, bio_scans.variant),
+                 updated_at   = excluded.updated_at",
+            params![system_address, body_id, body_name, genus, species, variant, status, commander_fid, updated_at, sample_increment],
         )
         .ok();
     }
@@ -674,75 +678,6 @@ fn replay_scan_events_for_system(conn: &Connection, system_address: i64) {
         }
     }
 
-    replay_bio_scan_events_for_system(conn, system_address);
-}
-
-fn replay_bio_scan_events_for_system(conn: &Connection, system_address: i64) {
-    // Replay SAASignalsFound
-    let rows: Vec<(String, Option<String>)> = {
-        let mut stmt = conn
-            .prepare(
-                "SELECT data, commander FROM events WHERE type = 'SAASignalsFound'
-                 AND json_extract(data, '$.SystemAddress') = ?1 ORDER BY id ASC",
-            )
-            .unwrap();
-        stmt.query_map(params![system_address], |row| Ok((row.get(0)?, row.get(1)?)))
-            .unwrap()
-            .filter_map(|r| r.ok())
-            .collect()
-    };
-    for (data_str, cmdr) in &rows {
-        if let Ok(d) = serde_json::from_str::<Value>(data_str) {
-            process_saa_signals_found(conn, &d, cmdr.as_deref());
-        }
-    }
-
-    // Replay ScanOrganic
-    let rows: Vec<(String, Option<String>)> = {
-        let mut stmt = conn
-            .prepare(
-                "SELECT data, commander FROM events WHERE type = 'ScanOrganic'
-                 AND json_extract(data, '$.SystemAddress') = ?1 ORDER BY id ASC",
-            )
-            .unwrap();
-        stmt.query_map(params![system_address], |row| Ok((row.get(0)?, row.get(1)?)))
-            .unwrap()
-            .filter_map(|r| r.ok())
-            .collect()
-    };
-    for (data_str, cmdr) in &rows {
-        if let Ok(d) = serde_json::from_str::<Value>(data_str) {
-            process_scan_organic(conn, &d, cmdr.as_deref());
-        }
-    }
-
-    // Replay Disembark (first footfall)
-    let rows: Vec<(String, String)> = {
-        let mut stmt = conn
-            .prepare(
-                "SELECT e.data, c.name
-                 FROM events e
-                 JOIN commanders c ON c.fid = e.commander
-                 WHERE e.type = 'Disembark'
-                   AND json_extract(e.data, '$.OnPlanet') = 1
-                   AND EXISTS (
-                       SELECT 1 FROM bodies b
-                       WHERE b.body_name = json_extract(e.data, '$.Body')
-                         AND b.system_address = ?1
-                   )
-                 ORDER BY e.id ASC",
-            )
-            .unwrap();
-        stmt.query_map(params![system_address], |row| Ok((row.get(0)?, row.get(1)?)))
-            .unwrap()
-            .filter_map(|r| r.ok())
-            .collect()
-    };
-    for (data_str, cmdr_name) in &rows {
-        if let Ok(d) = serde_json::from_str::<Value>(data_str) {
-            process_disembark_footfall(conn, &d, cmdr_name);
-        }
-    }
 }
 
 pub fn insert_event(conn: &Connection, event: &GameEvent, commander_fid: Option<&str>) {
@@ -1038,7 +973,7 @@ pub fn get_bio_scans_by_system(conn: &Connection, system_address: i64) -> Vec<Bi
     let mut stmt = conn
         .prepare(
             "SELECT id, system_address, body_id, body_name, genus, species, variant,
-                    status, first_found, base_value, commander_fid, updated_at
+                    status, first_found, base_value, commander_fid, updated_at, sample_count
              FROM bio_scans
              WHERE system_address = ?1
              ORDER BY body_id ASC, id ASC",
@@ -1059,6 +994,7 @@ pub fn get_bio_scans_by_system(conn: &Connection, system_address: i64) -> Vec<Bi
             base_value: row.get(9)?,
             commander_fid: row.get(10)?,
             updated_at: row.get(11)?,
+            sample_count: row.get(12)?,
         })
     })
     .unwrap()
@@ -1070,7 +1006,7 @@ pub fn get_all_bio_scans(conn: &Connection) -> Vec<BioScan> {
     let mut stmt = conn
         .prepare(
             "SELECT id, system_address, body_id, body_name, genus, species, variant,
-                    status, first_found, base_value, commander_fid, updated_at
+                    status, first_found, base_value, commander_fid, updated_at, sample_count
              FROM bio_scans
              ORDER BY system_address ASC, body_id ASC, id ASC",
         )
@@ -1090,6 +1026,7 @@ pub fn get_all_bio_scans(conn: &Connection) -> Vec<BioScan> {
             base_value: row.get(9)?,
             commander_fid: row.get(10)?,
             updated_at: row.get(11)?,
+            sample_count: row.get(12)?,
         })
     })
     .unwrap()

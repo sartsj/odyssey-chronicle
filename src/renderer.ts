@@ -242,7 +242,7 @@ function createBodyElement(body: SystemBody, cmdrName: string, bioScansForBody: 
 
       const statusBadge = document.createElement('span');
       statusBadge.className = `bio-species__status bio-species__status--${scan.status}`;
-      statusBadge.textContent = scan.status === 'complete' ? 'complete' : scan.status === 'collecting' ? '2nd sample' : 'genus only';
+      statusBadge.textContent = scan.status === 'complete' ? 'complete' : scan.status === 'collecting' ? (scan.sample_count <= 1 ? '1st sample' : '2nd sample') : 'genus only';
 
       const nameSpan = document.createElement('span');
       nameSpan.className = 'bio-species__name';
@@ -477,7 +477,7 @@ function createBioBodySection(bodyName: string, scans: BioScan[]): HTMLDivElemen
     const statusBadge = document.createElement('span');
     statusBadge.className = `bio-species__status bio-species__status--${scan.status}`;
     statusBadge.textContent = scan.status === 'complete' ? 'complete'
-      : scan.status === 'collecting' ? '2nd sample' : 'genus only';
+      : scan.status === 'collecting' ? (scan.sample_count <= 1 ? '1st sample' : '2nd sample') : 'genus only';
 
     const nameSpan = document.createElement('span');
     nameSpan.className = 'bio-species__name';

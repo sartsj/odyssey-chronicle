@@ -33,6 +33,7 @@ export interface BioScan {
   base_value: number | null;
   commander_fid: string | null;
   updated_at: string;
+  sample_count: number;
 }
 
 export interface SystemBody {

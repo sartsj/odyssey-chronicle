@@ -42,6 +42,7 @@ pub struct BioScan {
     pub base_value: Option<i64>,
     pub commander_fid: Option<String>,
     pub updated_at: String,
+    pub sample_count: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
